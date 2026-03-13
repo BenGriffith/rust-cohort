@@ -2,11 +2,33 @@
 // Hint: You need variants for:
 // LeftBrace, RightBrace, LeftBracket, RightBracket, Comma, Colon
 // String(String), Number(f64), Boolean(bool), Null
+#[derive(Debug, Clone, PartialEq)]
+enum Token {
+    LeftBrace,
+    RightBrace,
+    LeftBracket,
+    RightBracket,
+    Comma,
+    Colon,
+    String,
+    Number,
+    Boolean,
+    Null,
+}
 
 // TODO: Implement your tokenize function here
-// pub fn tokenize(input: &str) -> Vec<Token> {
-//     // Your code goes here
-// }
+pub fn tokenize(input: &str) -> Vec<Token> {
+    let mut token_vec = Vec::new();
+    for char in input.chars() {
+        match char {
+            '{' => token_vec.push(Token::LeftBrace),
+            '}' => token_vec.push(Token::RightBrace),
+            ' ' => continue,
+            _ => token_vec.push(Token::Null),
+        }
+    }
+    token_vec
+}
 
 #[cfg(test)]
 mod tests {
