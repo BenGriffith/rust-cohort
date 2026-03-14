@@ -105,7 +105,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             }
         }
     }
-    println!("{:?}", tokens);
     tokens
 }
 
