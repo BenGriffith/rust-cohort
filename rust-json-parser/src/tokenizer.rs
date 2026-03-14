@@ -10,24 +10,74 @@ enum Token {
     RightBracket,
     Comma,
     Colon,
-    String,
-    Number,
-    Boolean,
+    String(String),
+    Number(f64),
+    Boolean(bool),
     Null,
 }
 
 // TODO: Implement your tokenize function here
 pub fn tokenize(input: &str) -> Vec<Token> {
-    let mut token_vec = Vec::new();
-    for char in input.chars() {
-        match char {
-            '{' => token_vec.push(Token::LeftBrace),
-            '}' => token_vec.push(Token::RightBrace),
-            ' ' => continue,
-            _ => token_vec.push(Token::Null),
+    let mut tokens = Vec::new();
+    let mut chars = input.chars().peekable();
+
+    while let Some(&ch) = chars.peek() {
+        match ch {
+            '{' => {
+                tokens.push(Token::LeftBrace);
+                chars.next();
+            }
+            '}' => {
+                tokens.push(Token::RightBrace);
+                chars.next();
+            }
+            '[' => {
+                tokens.push(Token::LeftBracket);
+                chars.next();
+            }
+            ']' => {
+                tokens.push(Token::RightBracket);
+                chars.next();
+            }
+            ',' => {
+                tokens.push(Token::Comma);
+                chars.next();
+            }
+            ':' => {
+                tokens.push(Token::Colon);
+                chars.next();
+            }
+            '"' => {
+                chars.next();
+                let mut string_value = String::new();
+                while let Some(next_ch) = chars.next() {
+                    match next_ch {
+                        _ if next_ch != '"' => string_value.push(next_ch),
+                        _ => break,
+                    }
+                }
+                tokens.push(Token::String(string_value));
+            }
+            '0'..='9' | '-' => {
+                let mut string_value = String::new();
+                while let Some(next_ch) = chars.next() {
+                    match next_ch {
+                        _ if next_ch.is_numeric() => string_value.push(next_ch),
+                        '.' => string_value.push(next_ch),
+                        '-' => string_value.push(next_ch),
+                        _ => break,
+                    }
+                }
+                let number_value: f64 = string_value.parse().unwrap();
+                tokens.push(Token::Number(number_value));
+            }
+            _ => {
+                chars.next();
+            }
         }
     }
-    token_vec
+    println!("{:?}", tokens);
+    tokens
 }
 
 #[cfg(test)]
