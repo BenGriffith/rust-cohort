@@ -1,9 +1,5 @@
-// TODO: Define your Token enum here
-// Hint: You need variants for:
-// LeftBrace, RightBrace, LeftBracket, RightBracket, Comma, Colon
-// String(String), Number(f64), Boolean(bool), Null
 #[derive(Debug, Clone, PartialEq)]
-enum Token {
+pub enum Token {
     LeftBrace,
     RightBrace,
     LeftBracket,
@@ -16,7 +12,6 @@ enum Token {
     Null,
 }
 
-// TODO: Implement your tokenize function here
 pub fn tokenize(input: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
@@ -49,55 +44,30 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             }
             '"' => {
                 chars.next();
-                let mut string_value = String::new();
-                while let Some(next_ch) = chars.next() {
-                    if next_ch != '"' {
-                        string_value.push(next_ch);
-                    } else {
-                        break;
-                    }
-                }
+                let string_value: String = chars.by_ref().take_while(|&c| c != '"').collect();
                 tokens.push(Token::String(string_value));
             }
             '0'..='9' | '-' => {
                 let mut string_value = String::new();
-                while let Some(next_ch) = chars.next() {
-                    match next_ch {
-                        _ if next_ch.is_numeric() => string_value.push(next_ch),
-                        '.' => string_value.push(next_ch),
-                        '-' => string_value.push(next_ch),
-                        _ => break,
-                    }
-                    if let Some(&next_char) = chars.peek()
-                        && (next_char != '.' && next_char != '-' && !next_char.is_numeric())
-                    {
-                        break;
-                    }
-                }
-                println!("{:?}", chars);
-                let number_value: f64 = string_value.parse().unwrap();
-                tokens.push(Token::Number(number_value));
-            }
-            _ if ch.is_alphabetic() => {
-                let mut string_value = String::new();
-                while let Some(next_ch) = chars.next() {
-                    if next_ch.is_alphabetic() {
-                        string_value.push(next_ch.to_ascii_lowercase());
+                while let Some(&next_char) = chars.peek() {
+                    if next_char.is_numeric() || next_char == '.' || next_char == '-' {
+                        string_value.push(chars.next().unwrap());
                     } else {
                         break;
                     }
                 }
+                let number_value: f64 = string_value.parse().unwrap();
+                tokens.push(Token::Number(number_value));
+            }
+            _ if ch.is_alphabetic() => {
+                let string_value: String =
+                    chars.by_ref().take_while(|&c| c.is_alphabetic()).collect();
 
-                let true_string = String::from("true");
-                let false_string = String::from("false");
-                let null_string = String::from("null");
-                match string_value {
-                    _ if (true_string == string_value) || (false_string == string_value) => {
-                        let string_value: bool = string_value.parse().unwrap();
-                        tokens.push(Token::Boolean(string_value));
-                    }
-                    _ if null_string == string_value => tokens.push(Token::Null),
-                    _ => break,
+                if string_value == "null" {
+                    tokens.push(Token::Null);
+                } else if string_value == "true" || string_value == "false" {
+                    let bool_string: bool = string_value.parse().unwrap();
+                    tokens.push(Token::Boolean(bool_string));
                 }
             }
             _ => {
@@ -230,5 +200,20 @@ mod tests {
         let tokens = tokenize(".5");
         // Should NOT be interpreted as 0.5
         assert!(!tokens.contains(&Token::Number(0.5)));
+    }
+
+    #[test]
+    fn test_array_numbers() {
+        let tokens = tokenize("[1, 2, 3, -10]");
+        assert_eq!(tokens.len(), 9);
+    }
+
+    #[test]
+    fn test_array_strings() {
+        let tokens = tokenize(r#"["hello", "world"]"#);
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(tokens[0], Token::LeftBracket);
+        assert_eq!(tokens[1], Token::String("hello".to_string()));
+        assert!(tokens.contains(&Token::Comma));
     }
 }
