@@ -51,9 +51,10 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 chars.next();
                 let mut string_value = String::new();
                 while let Some(next_ch) = chars.next() {
-                    match next_ch {
-                        _ if next_ch != '"' => string_value.push(next_ch),
-                        _ => break,
+                    if next_ch != '"' {
+                        string_value.push(next_ch);
+                    } else {
+                        break;
                     }
                 }
                 tokens.push(Token::String(string_value));
@@ -67,9 +68,37 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                         '-' => string_value.push(next_ch),
                         _ => break,
                     }
+                    if let Some(&next_char) = chars.peek()
+                        && (next_char != '.' && next_char != '-' && !next_char.is_numeric())
+                    {
+                        break;
+                    }
                 }
+                println!("{:?}", chars);
                 let number_value: f64 = string_value.parse().unwrap();
                 tokens.push(Token::Number(number_value));
+            }
+            _ if ch.is_alphabetic() => {
+                let mut string_value = String::new();
+                while let Some(next_ch) = chars.next() {
+                    if next_ch.is_alphabetic() {
+                        string_value.push(next_ch.to_ascii_lowercase());
+                    } else {
+                        break;
+                    }
+                }
+
+                let true_string = String::from("true");
+                let false_string = String::from("false");
+                let null_string = String::from("null");
+                match string_value {
+                    _ if (true_string == string_value) || (false_string == string_value) => {
+                        let string_value: bool = string_value.parse().unwrap();
+                        tokens.push(Token::Boolean(string_value));
+                    }
+                    _ if null_string == string_value => tokens.push(Token::Null),
+                    _ => break,
+                }
             }
             _ => {
                 chars.next();
