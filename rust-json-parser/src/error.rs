@@ -1,18 +1,13 @@
 // Week 2: Custom error type for JSON parsing
 use std::fmt;
 
-// TODO: Define your JsonError enum here
-// Hint: You need variants for:
-// - UnexpectedToken { expected: String, found: String, position: usize }
-// - UnexpectedEndOfInput { expected: String, position: usize }
-// - InvalidNumber { value: String, position: usize }
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonError {
     UnexpectedToken {
         expected: String,
         found: String,
         position: usize,
-    }, 
+    },
     UnexpectedEndOfInput {
         expected: String,
         position: usize,
@@ -24,18 +19,30 @@ pub enum JsonError {
 }
 
 impl fmt::Display for JsonError {
-     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-         match self {
-             JsonError::UnexpectedToken { expected, found, position } => {
-                 write!(f, "Unexpected token at position {}: expected {}, found {}", position, expected, found)
-             },
-             JsonError::UnexpectedEndOfInput { expected, position } => {
-                 write!(f, "Unexpected end of input at position {}: expected {}", position, expected)
-             },
-             JsonError::InvalidNumber { value, position }  => {
-                 write!(f, "Invalid number: {} at position {}:", value, position)
-             },
-         }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            JsonError::UnexpectedToken {
+                expected,
+                found,
+                position,
+            } => {
+                write!(
+                    f,
+                    "Unexpected token at position {}: expected {}, found {}",
+                    position, expected, found
+                )
+            }
+            JsonError::UnexpectedEndOfInput { expected, position } => {
+                write!(
+                    f,
+                    "Unexpected end of input at position {}: expected {}",
+                    position, expected
+                )
+            }
+            JsonError::InvalidNumber { value, position } => {
+                write!(f, "Invalid number: {} at position {}:", value, position)
+            }
+        }
     }
 }
 
