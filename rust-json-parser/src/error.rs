@@ -12,23 +12,32 @@ pub enum JsonError {
         expected: String,
         found: String,
         position: usize,
-    } 
+    }, 
     UnexpectedEndOfInput {
         expected: String,
         position: usize,
-    }
+    },
     InvalidNumber {
         value: String,
         position: usize,
-    }
+    },
 }
 
-// TODO: Implement Display trait
-// impl fmt::Display for JsonError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         // Your code here
-//     }
-// }
+impl fmt::Display for JsonError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             JsonError::UnexpectedToken { expected, found, position } => {
+                 write!(f, "Unexpected token at position {}: expected {}, found {}", position, expected, found)
+             },
+             JsonError::UnexpectedEndOfInput { expected, position } => {
+                 write!(f, "Unexpected end of input at position {}: expected {}", position, expected)
+             },
+             JsonError::InvalidNumber { value, position }  => {
+                 write!(f, "Invalid number: {} at position {}:", value, position)
+             },
+         }
+    }
+}
 
 // TODO: Implement Error trait
 // impl std::error::Error for JsonError {}
