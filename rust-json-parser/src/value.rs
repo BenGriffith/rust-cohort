@@ -1,33 +1,39 @@
 // Week 2: JsonValue enum to represent parsed JSON values
 // Week 2 focuses on basic types only - no collections yet
-
-// TODO: Define your JsonValue enum here
-// Hint: You need variants for:
-// - Null
-// - Boolean(bool)
-// - Number(f64)
-// - String(String)
-
-// TODO: Implement helper methods
-// impl JsonValue {
-//     pub fn is_null(&self) -> bool { }
-//     pub fn as_str(&self) -> Option<&str> { }
-//     pub fn as_f64(&self) -> Option<f64> { }
-//     pub fn as_bool(&self) -> Option<bool> { }
-// }
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonValue {
-    Null(),
+    Null,
     Boolean(bool),
     Number(f64),
     String(String),
 }
 
 impl JsonValue {
-    pub fn is_null(&self) -> bool {}
-    pub fn as_str(&self) -> Option<&str> {}
-    pub fn as_f64(&self) -> Option<f64> {}
-    pub fn as_bool(&self) -> Option<bool> {}
+    pub fn is_null(&self) -> bool {
+        let test = matches!(self, JsonValue::Null);
+        test
+    }
+
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            JsonValue::String(s) => Some(s.as_str()),
+            _ => None,
+        }
+    }
+
+    pub fn as_f64(&self) -> Option<f64> {
+        match self {
+            JsonValue::Number(n) => Some(*n),
+            _ => None,
+        }
+    }
+
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            JsonValue::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
 }
 // Copy these tests as-is:
 #[cfg(test)]
