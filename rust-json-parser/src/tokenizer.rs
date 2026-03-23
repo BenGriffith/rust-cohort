@@ -51,26 +51,13 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 let mut string_value = String::new();
                 while let Some(&next_char) = chars.peek() {
                     if next_char.is_ascii_digit() || next_char == '.' || next_char == '-' {
-                        let next_char_value = chars.next().unwrap_or('X');
-                        match next_char_value {
-                            'X' => {
-                                println!("Skipped default unwrap: {}", next_char_value);
-                                break;
-                            }
-                            _ => string_value.push(next_char_value),
-                        }
+                        string_value.push(chars.next().unwrap_or_default());
                     } else {
                         break;
                     }
                 }
-                let number_value: f64 = string_value.parse().unwrap_or(100.00);
-                match number_value {
-                    100.00 => {
-                        println!("Skipped default unwrap: {}", number_value);
-                        break;
-                    }
-                    _ => tokens.push(Token::Number(number_value)),
-                }
+                let number_value: f64 = string_value.parse().unwrap_or_default();
+                tokens.push(Token::Number(number_value));
             }
             _ if ch.is_alphabetic() => {
                 let string_value: String =
@@ -78,11 +65,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 match string_value.as_str() {
                     "null" => tokens.push(Token::Null),
                     "true" => {
-                        let bool_string: bool = string_value.parse().unwrap_or(true);
+                        let bool_string: bool = string_value.parse().unwrap_or_default();
                         tokens.push(Token::Boolean(bool_string));
                     }
                     "false" => {
-                        let bool_string: bool = string_value.parse().unwrap_or(false);
+                        let bool_string: bool = string_value.parse().unwrap_or_default();
                         tokens.push(Token::Boolean(bool_string));
                     }
                     _ => break,
