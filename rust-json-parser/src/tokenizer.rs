@@ -57,8 +57,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
                         chars.next();
                         valid_number = false;
                         break;
-                    } else if next_char.is_numeric() || next_char == '.' || next_char == '-' {
-                        string_value.push(chars.next().unwrap());
+                    } else if next_char.is_ascii_digit() || next_char == '.' || next_char == '-' {
+                        string_value.push(chars.next().unwrap_or_default());
                     } else {
                         break;
                     }
@@ -71,15 +71,21 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
             _ if ch.is_alphabetic() => {
                 let string_value: String =
                     chars.by_ref().take_while(|&c| c.is_alphabetic()).collect();
-
-                if string_value == "null" {
-                    tokens.push(Token::Null);
-                } else if string_value == "true" || string_value == "false" {
-                    let bool_string: bool = string_value.parse().unwrap();
-                    tokens.push(Token::Boolean(bool_string));
+                match string_value.as_str() {
+                    "null" => tokens.push(Token::Null),
+                    "true" => {
+                        let bool_string: bool = string_value.parse().unwrap_or_default();
+                        tokens.push(Token::Boolean(bool_string));
+                    }
+                    "false" => {
+                        let bool_string: bool = string_value.parse().unwrap_or_default();
+                        tokens.push(Token::Boolean(bool_string));
+                    }
+                    _ => break,
                 }
             }
             _ if ch.is_whitespace() => {
+                println!("Skipped unknown char type: {}", ch);
                 chars.next();
             }
             _ => {
