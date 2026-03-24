@@ -6,14 +6,6 @@ use crate::value::JsonValue;
 // Result type alias for convenience
 type Result<T> = std::result::Result<T, JsonError>;
 
-// TODO: Implement your parse_json function
-// pub fn parse_json(input: &str) -> Result<JsonValue> {
-//     // Your code goes here
-//     // Hint:
-//     // 1. Call tokenize(input)?  (? propagates errors)
-//     // 2. Check if tokens is empty
-//     // 3. Match on tokens[0] and convert to JsonValue
-// }
 pub fn parse_json(input: &str) -> Result<JsonValue> {
     let tokens = tokenize(input)?;
     if tokens.is_empty() {
@@ -25,42 +17,15 @@ pub fn parse_json(input: &str) -> Result<JsonValue> {
     } else {
         let token = &tokens[0];
         let value = match token {
-            Token::LeftBrace => {
-                let left_brace: JsonValue = JsonValue::String('{'.to_string());
-                left_brace
-            }
-            Token::RightBrace => {
-                let right_brace: JsonValue = JsonValue::String('}'.to_string());
-                right_brace
-            }
-            Token::LeftBracket => {
-                let left_bracket: JsonValue = JsonValue::String('['.to_string());
-                left_bracket
-            }
-            Token::RightBracket => {
-                let right_bracket: JsonValue = JsonValue::String(']'.to_string());
-                right_bracket
-            }
-            Token::Comma => {
-                let comma: JsonValue = JsonValue::String(','.to_string());
-                comma
-            }
-            Token::Colon => {
-                let colon: JsonValue = JsonValue::String(':'.to_string());
-                colon
-            }
-            Token::String(s) => {
-                let string_value: JsonValue = JsonValue::String(s.to_string());
-                string_value
-            }
-            Token::Number(n) => {
-                let number_value: JsonValue = JsonValue::Number(*n);
-                number_value
-            }
-            Token::Boolean(b) => {
-                let bool_value: JsonValue = JsonValue::Boolean(*b);
-                bool_value
-            }
+            Token::LeftBrace => JsonValue::String('{'.to_string()),
+            Token::RightBrace => JsonValue::String('}'.to_string()),
+            Token::LeftBracket => JsonValue::String('['.to_string()),
+            Token::RightBracket => JsonValue::String(']'.to_string()),
+            Token::Comma => JsonValue::String(','.to_string()),
+            Token::Colon => JsonValue::String(':'.to_string()),
+            Token::String(s) => JsonValue::String(s.to_string()),
+            Token::Number(n) => JsonValue::Number(*n),
+            Token::Boolean(b) => JsonValue::Boolean(*b),
             Token::Null => JsonValue::Null,
         };
         Ok(value)
