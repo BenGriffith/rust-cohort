@@ -17,16 +17,15 @@ pub fn parse_json(input: &str) -> Result<JsonValue> {
     }
 
     match &tokens[0] {
-        Token::LeftBrace => Ok(JsonValue::String('{'.to_string())),
-        Token::RightBrace => Ok(JsonValue::String('}'.to_string())),
-        Token::LeftBracket => Ok(JsonValue::String('['.to_string())),
-        Token::RightBracket => Ok(JsonValue::String(']'.to_string())),
-        Token::Comma => Ok(JsonValue::String(','.to_string())),
-        Token::Colon => Ok(JsonValue::String(':'.to_string())),
-        Token::String(s) => Ok(JsonValue::String(s.to_string())),
+        Token::String(s) => Ok(JsonValue::String(s.clone())),
         Token::Number(n) => Ok(JsonValue::Number(*n)),
         Token::Boolean(b) => Ok(JsonValue::Boolean(*b)),
         Token::Null => Ok(JsonValue::Null),
+        _ => Err(JsonError::UnexpectedToken {
+            expected: "valid JSON token".to_string(),
+            found: format!("{:?}", tokens[0]),
+            position: 0,
+        }),
     }
 }
 

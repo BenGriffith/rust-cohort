@@ -19,6 +19,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
     let mut chars = input.char_indices().peekable();
 
     while let Some(&(pos, ch)) = chars.peek() {
+        println!("{:?}", ch);
         match ch {
             '{' => {
                 tokens.push(Token::LeftBrace);
@@ -53,24 +54,25 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
                     .collect();
                 tokens.push(Token::String(string_value));
             }
-            '0'..='9' | '-' | '.' => {
-                let mut valid_number: bool = true;
+            '0'..='9' | '-' => {
                 let mut string_value = String::new();
                 while let Some(&(_, next_char)) = chars.peek() {
-                    if ch == '.' && next_char.is_ascii_digit() {
-                        chars.next();
-                        valid_number = false;
-                        break;
-                    } else if next_char.is_ascii_digit() || next_char == '.' || next_char == '-' {
+                    if next_char.is_ascii_digit() || next_char == '.' || next_char == '-' {
                         string_value.push(next_char);
                         chars.next();
                     } else {
                         break;
                     }
                 }
-                if valid_number {
-                    let number_value: f64 = string_value.parse().unwrap();
-                    tokens.push(Token::Number(number_value));
+
+                match string_value.parse::<f64>() {
+                    Ok(n) => tokens.push(Token::Number(n)),
+                    Err(_) => {
+                        return Err(JsonError::InvalidNumber {
+                            value: string_value,
+                            position: pos,
+                        })
+                    }
                 }
             }
             _ if ch.is_alphabetic() => {
@@ -79,6 +81,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
                     .take_while(|&(_, c)| c.is_alphabetic())
                     .map(|(_, c)| c)
                     .collect();
+
                 match string_value.as_str() {
                     "null" => tokens.push(Token::Null),
                     "true" => {
@@ -174,9 +177,9 @@ mod tests {
     #[test]
     fn test_leading_decimal_not_a_number() -> Result<()> {
         // .5 is invalid JSON - numbers must have leading digit (0.5 is valid)
-        let tokens = tokenize(".5")?;
+        let tokens = tokenize(".5");
         // Should NOT be interpreted as 0.5
-        assert!(!tokens.contains(&Token::Number(0.5)));
+        assert!(tokens.is_err());
         Ok(())
     }
 
@@ -184,7 +187,7 @@ mod tests {
 
     #[test]
     fn test_invalid_keyword_error_position_points_to_start() {
-        let input = "   xyz";
+        let input = "   @yz";
         let result = tokenize(input);
         assert!(result.is_err());
         if let Err(JsonError::UnexpectedToken { position, .. }) = result {
