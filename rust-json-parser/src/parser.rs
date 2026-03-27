@@ -13,19 +13,22 @@ pub fn parse_json(input: &str) -> Result<JsonValue> {
             expected: (String::from("JSON value")),
             position: (0),
         };
-        return Err(json_error);
-    }
-
-    match &tokens[0] {
-        Token::String(s) => Ok(JsonValue::String(s.clone())),
-        Token::Number(n) => Ok(JsonValue::Number(*n)),
-        Token::Boolean(b) => Ok(JsonValue::Boolean(*b)),
-        Token::Null => Ok(JsonValue::Null),
-        _ => Err(JsonError::UnexpectedToken {
-            expected: "valid JSON token".to_string(),
-            found: format!("{:?}", tokens[0]),
-            position: 0,
-        }),
+        Err(json_error)
+    } else {
+        let token = &tokens[0];
+        let value = match token {
+            Token::LeftBrace => JsonValue::String('{'.to_string()),
+            Token::RightBrace => JsonValue::String('}'.to_string()),
+            Token::LeftBracket => JsonValue::String('['.to_string()),
+            Token::RightBracket => JsonValue::String(']'.to_string()),
+            Token::Comma => JsonValue::String(','.to_string()),
+            Token::Colon => JsonValue::String(':'.to_string()),
+            Token::String(s) => JsonValue::String(s.to_string()),
+            Token::Number(n) => JsonValue::Number(*n),
+            Token::Boolean(b) => JsonValue::Boolean(*b),
+            Token::Null => JsonValue::Null,
+        };
+        Ok(value)
     }
 }
 
