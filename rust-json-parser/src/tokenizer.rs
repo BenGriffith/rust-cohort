@@ -46,6 +46,7 @@ impl Tokenizer {
 
     pub fn tokenize(&mut self) -> Result<Vec<Token>, JsonError> {
         let mut tokens = Vec::new();
+        let valid_escape_seq = vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't'];
 
         while let Some(ch) = self.peek() {
             println!("position: {}, ch: {}", self.position, ch);
@@ -77,12 +78,34 @@ impl Tokenizer {
                 '"' => {
                     self.position += 1;
                     let mut string_value = String::new();
+                    let mut escape_seq = String::new();
                     while let Some(next_ch) = self.peek() {
                         if next_ch == '"' {
                             self.position += 1;
                             break;
+                        } else if next_ch == '\\' {
+                            escape_seq.push(self.advance().unwrap()); // FIX THESE UNWRAPS
+
+                            if valid_escape_seq.contains(&self.peek().unwrap()) {
+                                escape_seq.push(self.advance().unwrap());
+                            }
+
+                            match escape_seq.as_str() {
+                                r#"\""# => string_value.push('\"'),
+                                r#"\\"# => string_value.push('\\'),
+                                r#"\/"# => string_value.push('/'),
+                                r#"\b"# => string_value.push('\x08'),
+                                r#"\f"# => string_value.push('\x0C'),
+                                r#"\n"# => string_value.push('\n'),
+                                r#"\r"# => string_value.push('\r'),
+                                r#"\t"# => string_value.push('\t'),
+                                _ => {
+                                    println!("boo yaa"); // ADD ERROR
+                                }
+                            }
+                            escape_seq = String::new();
                         } else {
-                            string_value.push(self.advance().unwrap()); // FIX THIS UNWRAP
+                            string_value.push(self.advance().unwrap());
                         }
                     }
                     tokens.push(Token::String(string_value));
@@ -204,5 +227,63 @@ mod tests {
         let mut tokenizer = Tokenizer::new(r#""hello""#);
         let tokens = tokenizer.tokenize().unwrap();
         assert_eq!(tokens, vec![Token::String("hello".to_string())]);
+    }
+
+    // === Escape Sequence Tests ===
+
+    #[test]
+    fn test_escape_newline() {
+        let mut tokenizer = Tokenizer::new(r#""hello\nworld""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("hello\nworld".to_string())]);
+    }
+
+    #[test]
+    fn test_escape_tab() {
+        let mut tokenizer = Tokenizer::new(r#""col1\tcol2""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("col1\tcol2".to_string())]);
+    }
+
+    #[test]
+    fn test_escape_quote() {
+        let mut tokenizer = Tokenizer::new(r#""say \"hello\"""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("say \"hello\"".to_string())]);
+    }
+
+    #[test]
+    fn test_escape_backslash() {
+        let mut tokenizer = Tokenizer::new(r#""path\\to\\file""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("path\\to\\file".to_string())]);
+    }
+
+    #[test]
+    fn test_escape_forward_slash() {
+        let mut tokenizer = Tokenizer::new(r#""a\/b""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("a/b".to_string())]);
+    }
+
+    #[test]
+    fn test_escape_carriage_return() {
+        let mut tokenizer = Tokenizer::new(r#""line\r\n""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("line\r\n".to_string())]);
+    }
+
+    #[test]
+    fn test_escape_backspace_formfeed() {
+        let mut tokenizer = Tokenizer::new(r#""\b\f""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("\u{0008}\u{000C}".to_string())]);
+    }
+
+    #[test]
+    fn test_multiple_escapes() {
+        let mut tokenizer = Tokenizer::new(r#""a\nb\tc\"""#);
+        let tokens = tokenizer.tokenize().unwrap();
+        assert_eq!(tokens, vec![Token::String("a\nb\tc\"".to_string())]);
     }
 }
