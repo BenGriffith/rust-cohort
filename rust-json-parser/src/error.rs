@@ -16,6 +16,14 @@ pub enum JsonError {
         value: String,
         position: usize,
     },
+    InvalidEscape {
+        char: char,
+        position: usize,
+    },
+    InvalidUnicode {
+        sequence: String,
+        position: usize,
+    },
 }
 
 impl fmt::Display for JsonError {
@@ -42,64 +50,53 @@ impl fmt::Display for JsonError {
             JsonError::InvalidNumber { value, position } => {
                 write!(f, "Invalid number: {} at position {}:", value, position)
             }
+            JsonError::InvalidEscape { char, position } => {
+                write!(
+                    f,
+                    "Invalid escape character: {} at position {}:",
+                    char, position
+                )
+            }
+            JsonError::InvalidUnicode { sequence, position } => {
+                write!(f, "Invalid unicode: {} at position {}:", sequence, position)
+            }
         }
     }
 }
 
 impl std::error::Error for JsonError {}
 
-// Copy these tests as-is:
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_error_creation() {
-        let error = JsonError::UnexpectedToken {
-            expected: "number".to_string(),
-            found: "@".to_string(),
-
+    fn test_invalid_escape_display() {
+        let err = JsonError::InvalidEscape {
+            char: 'q',
             position: 5,
         };
-        // Error should be Debug-printable
-        assert!(format!("{:?}", error).contains("UnexpectedToken"));
+        let msg = format!("{}", err);
+        assert!(msg.contains("escape"));
+        assert!(msg.contains("q"));
     }
 
     #[test]
-    fn test_error_display() {
-        let error = JsonError::UnexpectedToken {
-            expected: "valid JSON".to_string(),
-            found: "@".to_string(),
-            position: 0,
-        };
-
-        let message = format!("{}", error);
-        assert!(message.contains("position 0"));
-        assert!(message.contains("valid JSON"));
-        assert!(message.contains("@"));
-    }
-
-    #[test]
-    fn test_error_variants() {
-        let token_error = JsonError::UnexpectedToken {
-            expected: "number".to_string(),
-            found: "x".to_string(),
+    fn test_invalid_unicode_display() {
+        let err = JsonError::InvalidUnicode {
+            sequence: "00GG".to_string(),
             position: 3,
         };
+        let msg = format!("{}", err);
+        assert!(msg.contains("unicode") || msg.contains("Unicode"));
+    }
 
-        let eof_error = JsonError::UnexpectedEndOfInput {
-            expected: "closing quote".to_string(),
-            position: 10,
-        };
-
-        let num_error = JsonError::InvalidNumber {
-            value: "12.34.56".to_string(),
+    #[test]
+    fn test_error_is_std_error() {
+        let err = JsonError::InvalidEscape {
+            char: 'x',
             position: 0,
         };
-
-        // All variants should be Debug-printable
-        format!("{:?}", token_error);
-        format!("{:?}", eof_error);
-        format!("{:?}", num_error);
+        let _: &dyn std::error::Error = &err; // Must implement Error trait
     }
 }

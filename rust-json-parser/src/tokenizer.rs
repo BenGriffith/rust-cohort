@@ -48,11 +48,10 @@ impl Tokenizer {
         let mut tokens = Vec::new();
         let valid_escape_seq = vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'];
 
-        println!("{:?}", self.input);
         if self.input.starts_with(&['"']) && !self.input.ends_with(&['"']) {
             return Err(JsonError::InvalidEscape {
-                value: "ok".to_string(),
-                position: 10,
+                char: '"',
+                position: self.input.len(),
             });
         }
 
@@ -103,7 +102,7 @@ impl Tokenizer {
                                     }
                                     if hex_string.len() < 4 {
                                         return Err(JsonError::InvalidUnicode {
-                                            value: hex_string,
+                                            sequence: hex_string,
                                             position: self.position,
                                         });
                                     }
@@ -116,7 +115,7 @@ impl Tokenizer {
                                         Err(_) => {
                                             let full_string = escape_seq + &hex_string;
                                             return Err(JsonError::InvalidUnicode {
-                                                value: full_string,
+                                                sequence: full_string,
                                                 position: self.position,
                                             });
                                         }
@@ -142,7 +141,7 @@ impl Tokenizer {
 
                                 _ => {
                                     return Err(JsonError::InvalidEscape {
-                                        value: escape_seq,
+                                        char: escape_seq.pop().unwrap(),
                                         position: self.position,
                                     })
                                 }
