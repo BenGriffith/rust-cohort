@@ -48,8 +48,15 @@ impl Tokenizer {
         let mut tokens = Vec::new();
         let valid_escape_seq = vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'];
 
+        println!("{:?}", self.input);
+        if self.input.starts_with(&['"']) && !self.input.ends_with(&['"']) {
+            return Err(JsonError::InvalidEscape {
+                value: "ok".to_string(),
+                position: 10,
+            });
+        }
+
         while let Some(ch) = self.peek() {
-            println!("position: {}, ch: {}", self.position, ch);
             match ch {
                 '{' => {
                     tokens.push(Token::LeftBrace);
@@ -79,7 +86,6 @@ impl Tokenizer {
                     self.position += 1;
                     let mut string_value = String::new();
                     while let Some(next_ch) = self.peek() {
-                        println!("{}", next_ch);
                         if next_ch == '"' {
                             self.position += 1;
                             break;
@@ -92,23 +98,38 @@ impl Tokenizer {
                                 let mut hex_string = String::new();
                                 escape_seq.push(escape_char);
                                 if escape_char == 'u' {
-                                    for i in 0..4 {
-                                        println!("{}", i);
+                                    while !self.is_at_end() && hex_string.len() <= 3 {
                                         hex_string.push(self.advance().unwrap());
                                     }
-                                    let code_point = u32::from_str_radix(&hex_string, 16);
-                                    let hex_ch = char::from_u32(code_point.unwrap());
-                                    // FIX
-
-                                    match hex_ch.unwrap() {
-                                        c => string_value.push(c),
+                                    if hex_string.len() < 4 {
+                                        return Err(JsonError::InvalidUnicode {
+                                            value: hex_string,
+                                            position: self.position,
+                                        });
                                     }
+                                    let code_point = u32::from_str_radix(&hex_string, 16);
+                                    match code_point {
+                                        Ok(n) => {
+                                            let test = char::from_u32(n);
+                                            string_value.push(test.unwrap());
+                                        }
+                                        Err(_) => {
+                                            let full_string = escape_seq + &hex_string;
+                                            return Err(JsonError::InvalidUnicode {
+                                                value: full_string,
+                                                position: self.position,
+                                            });
+                                        }
+                                    }
+
+                                    // match hex_ch.unwrap() {
+                                    //     c => string_value.push(c),
+                                    // }
                                     continue;
                                 }
                                 // escape_seq.push(self.advance().unwrap());
                             }
 
-                            println!("{}", escape_seq);
                             match escape_seq.as_str() {
                                 r#"\""# => string_value.push('\"'),
                                 r#"\\"# => string_value.push('\\'),
@@ -118,11 +139,14 @@ impl Tokenizer {
                                 r#"\n"# => string_value.push('\n'),
                                 r#"\r"# => string_value.push('\r'),
                                 r#"\t"# => string_value.push('\t'),
+
                                 _ => {
-                                    println!("boo yaa"); // ADD ERROR
+                                    return Err(JsonError::InvalidEscape {
+                                        value: escape_seq,
+                                        position: self.position,
+                                    })
                                 }
                             }
-                            escape_seq = String::new();
                         } else {
                             string_value.push(self.advance().unwrap());
                         }
@@ -338,5 +362,35 @@ mod tests {
         let mut tokenizer = Tokenizer::new(r#""\u004a""#);
         let tokens = tokenizer.tokenize().unwrap();
         assert_eq!(tokens, vec![Token::String("J".to_string())]);
+    }
+
+    // === Error Tests ===
+
+    #[test]
+    fn test_invalid_escape_sequence() {
+        let mut tokenizer = Tokenizer::new(r#""\q""#);
+        let result = tokenizer.tokenize();
+        assert!(matches!(result, Err(JsonError::InvalidEscape { .. })));
+    }
+
+    #[test]
+    fn test_invalid_unicode_too_short() {
+        let mut tokenizer = Tokenizer::new(r#""\u004""#);
+        let result = tokenizer.tokenize();
+        assert!(matches!(result, Err(JsonError::InvalidUnicode { .. })));
+    }
+
+    #[test]
+    fn test_invalid_unicode_bad_hex() {
+        let mut tokenizer = Tokenizer::new(r#""\u00GG""#);
+        let result = tokenizer.tokenize();
+        assert!(matches!(result, Err(JsonError::InvalidUnicode { .. })));
+    }
+
+    #[test]
+    fn test_unterminated_string_with_escape() {
+        let mut tokenizer = Tokenizer::new(r#""hello\n"#);
+        let result = tokenizer.tokenize();
+        assert!(result.is_err());
     }
 }
