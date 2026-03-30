@@ -1,5 +1,3 @@
-// Week 2: JsonValue enum to represent parsed JSON values
-// Week 2 focuses on basic types only - no collections yet
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonValue {
     Null,

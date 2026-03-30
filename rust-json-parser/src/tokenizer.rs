@@ -27,23 +27,6 @@ impl Tokenizer {
         }
     }
 
-    fn advance(&mut self) -> Option<char> {
-        // move forward, return previous char
-        let current_char = self.peek();
-        self.position += 1;
-        current_char
-    }
-
-    fn peek(&self) -> Option<char> {
-        // look at current char without advancing
-        self.input.get(self.position).copied()
-    }
-
-    fn is_at_end(&self) -> bool {
-        // check if we've consumed all the input
-        self.input.is_empty()
-    }
-
     pub fn tokenize(&mut self) -> Result<Vec<Token>, JsonError> {
         let mut tokens = Vec::new();
         let valid_escape_seq = vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'];
@@ -84,52 +67,52 @@ impl Tokenizer {
                 '"' => {
                     self.position += 1;
                     let mut string_value = String::new();
+
                     while let Some(next_ch) = self.peek() {
                         if next_ch == '"' {
                             self.position += 1;
                             break;
                         } else if next_ch == '\\' {
-                            let mut escape_seq = String::new();
-                            escape_seq.push(self.advance().unwrap()); // FIX THESE UNWRAPS
+                            let mut escape_chars = String::new();
+                            escape_chars.push(self.advance().unwrap_or_default());
 
-                            if valid_escape_seq.contains(&self.peek().unwrap()) {
-                                let escape_char = self.advance().unwrap();
-                                let mut hex_string = String::new();
-                                escape_seq.push(escape_char);
+                            if valid_escape_seq.contains(&self.peek().unwrap_or_default()) {
+                                let escape_char = self.advance().unwrap_or_default();
+                                escape_chars.push(escape_char);
+
                                 if escape_char == 'u' {
+                                    let mut hex_string = String::new();
+
                                     while !self.is_at_end() && hex_string.len() <= 3 {
-                                        hex_string.push(self.advance().unwrap());
+                                        hex_string.push(self.advance().unwrap_or_default());
                                     }
+
                                     if hex_string.len() < 4 {
                                         return Err(JsonError::InvalidUnicode {
                                             sequence: hex_string,
                                             position: self.position,
                                         });
                                     }
+
                                     let code_point = u32::from_str_radix(&hex_string, 16);
                                     match code_point {
                                         Ok(n) => {
-                                            let test = char::from_u32(n);
-                                            string_value.push(test.unwrap());
+                                            let hex_digit = char::from_u32(n);
+                                            string_value.push(hex_digit.unwrap_or_default());
                                         }
                                         Err(_) => {
-                                            let full_string = escape_seq + &hex_string;
                                             return Err(JsonError::InvalidUnicode {
-                                                sequence: full_string,
+                                                sequence: escape_chars + &hex_string,
                                                 position: self.position,
                                             });
                                         }
                                     }
 
-                                    // match hex_ch.unwrap() {
-                                    //     c => string_value.push(c),
-                                    // }
                                     continue;
                                 }
-                                // escape_seq.push(self.advance().unwrap());
                             }
 
-                            match escape_seq.as_str() {
+                            match escape_chars.as_str() {
                                 r#"\""# => string_value.push('\"'),
                                 r#"\\"# => string_value.push('\\'),
                                 r#"\/"# => string_value.push('/'),
@@ -138,16 +121,15 @@ impl Tokenizer {
                                 r#"\n"# => string_value.push('\n'),
                                 r#"\r"# => string_value.push('\r'),
                                 r#"\t"# => string_value.push('\t'),
-
                                 _ => {
                                     return Err(JsonError::InvalidEscape {
-                                        char: escape_seq.pop().unwrap(),
+                                        char: escape_chars.pop().unwrap_or('?'),
                                         position: self.position,
-                                    })
+                                    });
                                 }
                             }
                         } else {
-                            string_value.push(self.advance().unwrap());
+                            string_value.push(self.advance().unwrap_or_default());
                         }
                     }
                     tokens.push(Token::String(string_value));
@@ -156,7 +138,7 @@ impl Tokenizer {
                     let mut string_value = String::new();
                     while let Some(next_char) = self.peek() {
                         if next_char.is_ascii_digit() || next_char == '.' || next_char == '-' {
-                            string_value.push(self.advance().unwrap()); // FIX THIS UNWRAP
+                            string_value.push(self.advance().unwrap_or_default());
                         } else {
                             break;
                         }
@@ -176,7 +158,7 @@ impl Tokenizer {
                     let mut string_value = String::new();
                     while let Some(next_ch) = self.peek() {
                         if next_ch.is_alphabetic() {
-                            string_value.push(self.advance().unwrap());
+                            string_value.push(self.advance().unwrap_or_default());
                         } else {
                             break;
                         }
@@ -209,6 +191,23 @@ impl Tokenizer {
             }
         }
         Ok(tokens)
+    }
+
+    fn advance(&mut self) -> Option<char> {
+        // move forward, return previous char
+        let current_char = self.peek();
+        self.position += 1;
+        current_char
+    }
+
+    fn peek(&self) -> Option<char> {
+        // look at current char without advancing
+        self.input.get(self.position).copied()
+    }
+
+    fn is_at_end(&self) -> bool {
+        // check if we've consumed all the input
+        self.input.is_empty()
     }
 }
 

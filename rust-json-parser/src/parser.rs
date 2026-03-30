@@ -1,4 +1,3 @@
-// Week 2: Simple parser for primitive JSON values
 use crate::error::JsonError;
 use crate::tokenizer::{Token, Tokenizer};
 use crate::value::JsonValue;
@@ -27,7 +26,7 @@ impl JsonParser {
         })
     }
 
-    fn parse(&mut self) -> Result<JsonValue> {
+    pub fn parse(&mut self) -> Result<JsonValue> {
         match &self.tokens[self.position] {
             Token::String(s) => Ok(JsonValue::String(s.clone())),
             Token::Number(n) => Ok(JsonValue::Number(*n)),

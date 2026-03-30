@@ -1,4 +1,3 @@
-// Week 2: Custom error type for JSON parsing
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
