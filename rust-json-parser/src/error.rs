@@ -23,6 +23,9 @@ pub enum JsonError {
         sequence: String,
         position: usize,
     },
+    InvalidPosition {
+        position: usize,
+    },
 }
 
 impl fmt::Display for JsonError {
@@ -58,6 +61,9 @@ impl fmt::Display for JsonError {
             }
             JsonError::InvalidUnicode { sequence, position } => {
                 write!(f, "Invalid unicode: {} at position {}:", sequence, position)
+            }
+            JsonError::InvalidPosition { position } => {
+                write!(f, "Invalid position: {position}")
             }
         }
     }

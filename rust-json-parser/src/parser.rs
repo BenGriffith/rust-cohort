@@ -28,17 +28,16 @@ impl JsonParser {
 
     pub fn parse(&mut self) -> Result<JsonValue> {
         if self.is_at_end() {
-            return Err(JsonError::UnexpectedEndOfInput {
-                expected: "test".to_string(),
+            return Err(JsonError::InvalidPosition {
                 position: self.position,
             });
         }
 
-        match self.advance().unwrap() {
-            Token::String(s) => Ok(JsonValue::String(s.clone())),
-            Token::Number(n) => Ok(JsonValue::Number(n)),
-            Token::Boolean(b) => Ok(JsonValue::Boolean(b)),
-            Token::Null => Ok(JsonValue::Null),
+        match self.advance() {
+            Some(Token::String(s)) => Ok(JsonValue::String(s.clone())),
+            Some(Token::Number(n)) => Ok(JsonValue::Number(n)),
+            Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b)),
+            Some(Token::Null) => Ok(JsonValue::Null),
             _ => Err(JsonError::UnexpectedToken {
                 expected: "valid JSON token".to_string(),
                 found: format!("{:?}", self.tokens[self.position]),
@@ -173,5 +172,18 @@ mod tests {
     fn test_parse_whitespace_only() {
         let parser = JsonParser::new("   ");
         assert!(parser.is_err() || parser.unwrap().parse().is_err());
+    }
+
+    #[test]
+    fn test_invalid_position() {
+        let mut parser = JsonParser::new("1 2").unwrap();
+        let json_value_one = parser.parse();
+        let json_value_two = parser.parse();
+        assert_eq!(json_value_one.unwrap(), JsonValue::Number(1.0));
+        assert_eq!(json_value_two.unwrap(), JsonValue::Number(2.0));
+        assert!(matches!(
+            parser.parse(),
+            Err(JsonError::InvalidPosition { .. })
+        ));
     }
 }
