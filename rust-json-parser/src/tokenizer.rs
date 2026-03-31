@@ -174,7 +174,7 @@ impl Tokenizer {
                             let bool_string: bool = string_value.parse().unwrap_or_default();
                             tokens.push(Token::Boolean(bool_string));
                         }
-                        _ => break,
+                        _ => {}
                     }
                 }
                 _ if ch.is_whitespace() => {
@@ -207,7 +207,7 @@ impl Tokenizer {
 
     fn is_at_end(&self) -> bool {
         // check if we've consumed all the input
-        self.input.is_empty()
+        self.position >= self.input.len()
     }
 }
 

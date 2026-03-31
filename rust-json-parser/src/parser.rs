@@ -27,10 +27,17 @@ impl JsonParser {
     }
 
     pub fn parse(&mut self) -> Result<JsonValue> {
-        match &self.tokens[self.position] {
+        if self.is_at_end() {
+            return Err(JsonError::UnexpectedEndOfInput {
+                expected: "test".to_string(),
+                position: self.position,
+            });
+        }
+
+        match self.advance().unwrap() {
             Token::String(s) => Ok(JsonValue::String(s.clone())),
-            Token::Number(n) => Ok(JsonValue::Number(*n)),
-            Token::Boolean(b) => Ok(JsonValue::Boolean(*b)),
+            Token::Number(n) => Ok(JsonValue::Number(n)),
+            Token::Boolean(b) => Ok(JsonValue::Boolean(b)),
             Token::Null => Ok(JsonValue::Null),
             _ => Err(JsonError::UnexpectedToken {
                 expected: "valid JSON token".to_string(),
@@ -40,13 +47,15 @@ impl JsonParser {
         }
     }
 
+    // switch these around so that this advance looks similar to tokenizer.advance()
     fn advance(&mut self) -> Option<Token> {
+        let token = self.tokens.get(self.position).cloned();
         self.position += 1;
-        self.tokens.get(self.position).cloned()
+        token
     }
 
     fn is_at_end(&self) -> bool {
-        self.tokens.is_empty()
+        self.position >= self.tokens.len()
     }
 }
 
