@@ -19,7 +19,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
     let mut chars = input.char_indices().peekable();
 
     while let Some(&(pos, ch)) = chars.peek() {
-        println!("{:?}", ch);
         match ch {
             '{' => {
                 tokens.push(Token::LeftBrace);
@@ -84,23 +83,21 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
 
                 match string_value.as_str() {
                     "null" => tokens.push(Token::Null),
-                    "true" => {
-                        let bool_string: bool = string_value.parse().unwrap_or_default();
-                        tokens.push(Token::Boolean(bool_string));
+                    "true" => tokens.push(Token::Boolean(true)),
+                    "false" => tokens.push(Token::Boolean(false)),
+                    _ => {
+                        return Err(JsonError::UnexpectedToken {
+                            expected: r#""null", "true", or "false""#.to_string(),
+                            found: string_value,
+                            position: pos,
+                        })
                     }
-                    "false" => {
-                        let bool_string: bool = string_value.parse().unwrap_or_default();
-                        tokens.push(Token::Boolean(bool_string));
-                    }
-                    _ => break,
                 }
             }
             _ if ch.is_whitespace() => {
-                println!("Skipped unknown char type: {}", ch);
                 chars.next();
             }
             _ => {
-                println!("{:?}", pos);
                 return Err(JsonError::UnexpectedToken {
                     expected: "valid JSON token".to_string(),
                     found: ch.to_string(),
