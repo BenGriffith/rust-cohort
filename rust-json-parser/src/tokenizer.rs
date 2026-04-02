@@ -166,15 +166,15 @@ impl Tokenizer {
 
                     match string_value.as_str() {
                         "null" => tokens.push(Token::Null),
-                        "true" => {
-                            let bool_string: bool = string_value.parse().unwrap_or_default();
-                            tokens.push(Token::Boolean(bool_string));
+                        "true" => tokens.push(Token::Boolean(true)),
+                        "false" => tokens.push(Token::Boolean(false)),
+                        _ => {
+                            return Err(JsonError::UnexpectedToken {
+                                expected: r#""null", "true", or "false""#.to_string(),
+                                found: string_value,
+                                position: self.position,
+                            });
                         }
-                        "false" => {
-                            let bool_string: bool = string_value.parse().unwrap_or_default();
-                            tokens.push(Token::Boolean(bool_string));
-                        }
-                        _ => {}
                     }
                 }
                 _ if ch.is_whitespace() => {
