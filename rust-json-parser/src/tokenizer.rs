@@ -90,7 +90,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, JsonError> {
                             expected: r#""null", "true", or "false""#.to_string(),
                             found: string_value,
                             position: pos,
-                        })
+                        });
                     }
                 }
             }
@@ -116,6 +116,74 @@ mod tests {
 
     // Result type alias for cleaner test signatures
     type Result<T> = std::result::Result<T, JsonError>;
+
+    fn test_empty_braces() -> Result<()> {
+        let tokens = tokenize("{}")?;
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0], Token::LeftBrace);
+        assert_eq!(tokens[1], Token::RightBrace);
+        Ok(())
+    }
+
+    #[test]
+    fn test_simple_string() -> Result<()> {
+        let tokens = tokenize(r#""hello""#)?;
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0], Token::String("hello".to_string()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_number() -> Result<()> {
+        let tokens = tokenize("42")?;
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0], Token::Number(42.0));
+        Ok(())
+    }
+
+    #[test]
+    fn test_tokenize_string() -> Result<()> {
+        let tokens = tokenize(r#""hello world""#)?;
+
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0], Token::String("hello world".to_string()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_boolean_and_null() -> Result<()> {
+        let tokens = tokenize("true false null")?;
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[0], Token::Boolean(true));
+        assert_eq!(tokens[1], Token::Boolean(false));
+        assert_eq!(tokens[2], Token::Null);
+        Ok(())
+    }
+
+    #[test]
+    fn test_simple_object() -> Result<()> {
+        let tokens = tokenize(r#"{"name": "Alice"}"#)?;
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(tokens[0], Token::LeftBrace);
+        assert_eq!(tokens[1], Token::String("name".to_string()));
+        assert_eq!(tokens[2], Token::Colon);
+        assert_eq!(tokens[3], Token::String("Alice".to_string()));
+        assert_eq!(tokens[4], Token::RightBrace);
+        Ok(())
+    }
+
+    #[test]
+    fn test_multiple_values() -> Result<()> {
+        let tokens = tokenize(r#"{"age": 30, "active": true}"#)?;
+
+        // Verify we have the right tokens
+        assert!(tokens.contains(&Token::String("age".to_string())));
+        assert!(tokens.contains(&Token::Number(30.0)));
+        assert!(tokens.contains(&Token::Comma));
+        assert!(tokens.contains(&Token::String("active".to_string())));
+        assert!(tokens.contains(&Token::Boolean(true)));
+        Ok(())
+    }
 
     // String boundary tests - verify inner vs outer quote handling
     #[test]
@@ -180,7 +248,23 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_array_numbers() -> Result<()> {
+        let tokens = tokenize("[1, 2, 3, -10]")?;
+        assert_eq!(tokens.len(), 9);
+        Ok(())
+    }
+
     // Error position tests
+
+    fn test_array_strings() -> Result<()> {
+        let tokens = tokenize(r#"["hello", "world"]"#)?;
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(tokens[0], Token::LeftBracket);
+        assert_eq!(tokens[1], Token::String("hello".to_string()));
+        assert!(tokens.contains(&Token::Comma));
+        Ok(())
+    }
 
     #[test]
     fn test_invalid_keyword_error_position_points_to_start() {
