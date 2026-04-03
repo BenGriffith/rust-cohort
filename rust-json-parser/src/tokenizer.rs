@@ -218,6 +218,7 @@ mod tests {
     // Result type alias for cleaner test signatures
     type Result<T> = std::result::Result<T, JsonError>;
 
+    #[test]
     fn test_empty_braces() -> Result<()> {
         let mut json_tokenizer = Tokenizer::new("{}");
         let tokens = json_tokenizer.tokenize()?;
@@ -372,7 +373,7 @@ mod tests {
     }
 
     // Error position tests
-
+    #[test]
     fn test_array_strings() -> Result<()> {
         let mut json_tokenizer = Tokenizer::new(r#"["hello", "world"]"#);
         let tokens = json_tokenizer.tokenize()?;
@@ -402,9 +403,10 @@ mod tests {
     // === Struct Usage Tests ===
     #[test]
     fn test_tokenizer_struct_creation() {
-        let tokenizer = Tokenizer::new(r#""hello""#);
+        let mut tokenizer = Tokenizer::new(r#""hello""#);
         // Tokenizer should be created without error
         // Internal state is private, so we test via tokenize()
+        assert!(tokenizer.tokenize().is_ok());
     }
 
     #[test]
