@@ -34,7 +34,7 @@ impl JsonParser {
         }
 
         match self.advance() {
-            Some(Token::String(s)) => Ok(JsonValue::String(s.clone())),
+            Some(Token::String(s)) => Ok(JsonValue::String(s)),
             Some(Token::Number(n)) => Ok(JsonValue::Number(n)),
             Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b)),
             Some(Token::Null) => Ok(JsonValue::Null),
@@ -46,7 +46,6 @@ impl JsonParser {
         }
     }
 
-    // switch these around so that this advance looks similar to tokenizer.advance()
     fn advance(&mut self) -> Option<Token> {
         let token = self.tokens.get(self.position).cloned();
         self.position += 1;
