@@ -402,6 +402,15 @@ mod tests {
         Ok(())
     }
 
+    fn test_array_strings() -> Result<()> {
+        let tokens = tokenize(r#"["hello", "world"]"#)?;
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(tokens[0], Token::LeftBracket);
+        assert_eq!(tokens[1], Token::String("hello".to_string()));
+        assert!(tokens.contains(&Token::Comma));
+        Ok(())
+    }
+
     #[test]
     fn test_invalid_keyword_error_position_points_to_start() {
         let input = "   @yz";
