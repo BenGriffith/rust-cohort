@@ -8,6 +8,7 @@ type Result<T> = std::result::Result<T, JsonError>;
 pub struct JsonParser {
     tokens: Vec<Token>,
     position: usize,
+    previous: usize,
 }
 
 impl JsonParser {
@@ -23,6 +24,7 @@ impl JsonParser {
         Ok(Self {
             tokens: json_tokens,
             position: 0,
+            previous: 0,
         })
     }
 
@@ -33,20 +35,42 @@ impl JsonParser {
             });
         }
 
-        match self.peek() {
-            Some(Token::String(s)) => Ok(JsonValue::String(s.clone())),
-            Some(Token::Number(n)) => Ok(JsonValue::Number(n.clone())),
-            Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b.clone())),
+        match self.advance() {
+            Some(Token::String(s)) => Ok(JsonValue::String(s)),
+            Some(Token::Number(n)) => Ok(JsonValue::Number(n)),
+            Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b)),
             Some(Token::Null) => Ok(JsonValue::Null),
             Some(Token::LeftBracket) => {
-                json_array = vec![];
-                
-            }Ok(JsonValue::Array(vec![])),
+                let mut json_array: Vec<JsonValue> = vec![];
+                while let Some(current_token) = self.advance() {
+                    match current_token {
+                        Token::String(s) => {
+                            json_array.push(JsonValue::String(s));
+                            self.advance();
+                        }
+                        Token::Number(n) => {
+                            json_array.push(JsonValue::Number(n));
+                            self.advance();
+                        }
+                        Token::Boolean(b) => {
+                            json_array.push(JsonValue::Boolean(b));
+                            self.advance();
+                        }
+                        Token::Comma => {
+                            self.advance();
+                        }
+                        _ => {
+                            break;
+                        }
+                    }
+                }
+                Ok(JsonValue::Array(json_array))
+            }
             // Some(Token::LeftBracket) => Ok(JsonValue::String("here we go".to_string())),
             other => Err(JsonError::UnexpectedToken {
                 expected: "valid JSON token".to_string(),
                 found: format!("{:?}", other),
-                position: self.position,
+                position: self.previous,
             }),
         }
     }
@@ -54,11 +78,8 @@ impl JsonParser {
     fn advance(&mut self) -> Option<Token> {
         let token = self.tokens.get(self.position).cloned();
         self.position += 1;
+        self.previous = self.position - 1;
         token
-    }
-
-    fn peek(&mut self) -> Option<&Token> {
-        self.tokens.get(self.position)
     }
 
     fn is_at_end(&self) -> bool {
@@ -204,10 +225,15 @@ mod tests {
         }
 
         #[test]
+        fn test_parse_empty_array() {
+            let value = parse_json("[]").unwrap();
+            assert_eq!(value, JsonValue::Array(vec![]));
+        }
+
+        #[test]
         fn test_array_accessor() {
             let value = parse_json("[1, 2, 3]").unwrap();
             let arr = value.as_array().unwrap();
-            dbg!(arr);
             assert_eq!(arr.len(), 3);
         }
     }
