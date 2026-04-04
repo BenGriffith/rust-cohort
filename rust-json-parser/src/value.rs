@@ -1,9 +1,13 @@
+use std::collections::HashMap;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonValue {
     Null,
     Boolean(bool),
     Number(f64),
     String(String),
+    Array(Vec<JsonValue>),
+    Object(HashMap<String, JsonValue>),
 }
 
 impl JsonValue {
@@ -28,6 +32,13 @@ impl JsonValue {
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             JsonValue::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    pub fn as_array(&self) -> Option<&Vec<JsonValue>> {
+        match self {
+            JsonValue::Array(e) => Some(e),
             _ => None,
         }
     }

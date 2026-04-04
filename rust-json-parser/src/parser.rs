@@ -33,14 +33,19 @@ impl JsonParser {
             });
         }
 
-        match self.advance() {
-            Some(Token::String(s)) => Ok(JsonValue::String(s)),
-            Some(Token::Number(n)) => Ok(JsonValue::Number(n)),
-            Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b)),
+        match self.peek() {
+            Some(Token::String(s)) => Ok(JsonValue::String(s.clone())),
+            Some(Token::Number(n)) => Ok(JsonValue::Number(n.clone())),
+            Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b.clone())),
             Some(Token::Null) => Ok(JsonValue::Null),
-            _ => Err(JsonError::UnexpectedToken {
+            Some(Token::LeftBracket) => {
+                json_array = vec![];
+                
+            }Ok(JsonValue::Array(vec![])),
+            // Some(Token::LeftBracket) => Ok(JsonValue::String("here we go".to_string())),
+            other => Err(JsonError::UnexpectedToken {
                 expected: "valid JSON token".to_string(),
-                found: format!("{:?}", self.tokens[self.position]),
+                found: format!("{:?}", other),
                 position: self.position,
             }),
         }
@@ -50,6 +55,10 @@ impl JsonParser {
         let token = self.tokens.get(self.position).cloned();
         self.position += 1;
         token
+    }
+
+    fn peek(&mut self) -> Option<&Token> {
+        self.tokens.get(self.position)
     }
 
     fn is_at_end(&self) -> bool {
@@ -184,5 +193,22 @@ mod tests {
             parser.parse(),
             Err(JsonError::InvalidPosition { .. })
         ));
+    }
+
+    mod array_tests {
+        use super::*;
+
+        fn parse_json(input: &str) -> Result<JsonValue> {
+            let mut parser = JsonParser::new(input)?;
+            parser.parse()
+        }
+
+        #[test]
+        fn test_array_accessor() {
+            let value = parse_json("[1, 2, 3]").unwrap();
+            let arr = value.as_array().unwrap();
+            dbg!(arr);
+            assert_eq!(arr.len(), 3);
+        }
     }
 }
