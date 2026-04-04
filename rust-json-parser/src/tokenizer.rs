@@ -29,14 +29,6 @@ impl Tokenizer {
 
     pub fn tokenize(&mut self) -> Result<Vec<Token>, JsonError> {
         let mut tokens = Vec::new();
-        let valid_escape_seq = vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'];
-
-        if self.input.starts_with(&['"']) && !self.input.ends_with(&['"']) {
-            return Err(JsonError::InvalidEscape {
-                char: '"',
-                position: self.input.len(),
-            });
-        }
 
         while let Some(ch) = self.peek() {
             match ch {
@@ -69,67 +61,25 @@ impl Tokenizer {
                     let mut string_value = String::new();
 
                     while let Some(next_ch) = self.peek() {
-                        if next_ch == '"' {
-                            self.position += 1;
-                            break;
-                        } else if next_ch == '\\' {
-                            let mut escape_chars = String::new();
-                            escape_chars.push(self.advance().unwrap_or_default());
-
-                            if valid_escape_seq.contains(&self.peek().unwrap_or_default()) {
-                                let escape_char = self.advance().unwrap_or_default();
-                                escape_chars.push(escape_char);
-
-                                if escape_char == 'u' {
-                                    let mut hex_string = String::new();
-
-                                    while !self.is_at_end() && hex_string.len() <= 3 {
-                                        hex_string.push(self.advance().unwrap_or_default());
-                                    }
-
-                                    if hex_string.len() < 4 {
-                                        return Err(JsonError::InvalidUnicode {
-                                            sequence: hex_string,
-                                            position: self.position,
-                                        });
-                                    }
-
-                                    let code_point = u32::from_str_radix(&hex_string, 16);
-                                    match code_point {
-                                        Ok(n) => {
-                                            let hex_digit = char::from_u32(n);
-                                            string_value.push(hex_digit.unwrap_or_default());
-                                        }
-                                        Err(_) => {
-                                            return Err(JsonError::InvalidUnicode {
-                                                sequence: escape_chars + &hex_string,
-                                                position: self.position,
-                                            });
-                                        }
-                                    }
-
-                                    continue;
+                        match next_ch {
+                            '"' => {
+                                self.position += 1;
+                                break;
+                            }
+                            '\\' => {
+                                string_value = self.parse_escape_seq(string_value)?;
+                            }
+                            _ => {
+                                if let Some(c) = self.advance() {
+                                    string_value.push(c);
                                 }
                             }
-
-                            match escape_chars.as_str() {
-                                r#"\""# => string_value.push('\"'),
-                                r#"\\"# => string_value.push('\\'),
-                                r#"\/"# => string_value.push('/'),
-                                r#"\b"# => string_value.push('\x08'),
-                                r#"\f"# => string_value.push('\x0C'),
-                                r#"\n"# => string_value.push('\n'),
-                                r#"\r"# => string_value.push('\r'),
-                                r#"\t"# => string_value.push('\t'),
-                                _ => {
-                                    return Err(JsonError::InvalidEscape {
-                                        char: escape_chars.pop().unwrap_or('?'),
-                                        position: self.position,
-                                    });
-                                }
-                            }
-                        } else {
-                            string_value.push(self.advance().unwrap_or_default());
+                        }
+                        if self.is_at_end() {
+                            return Err(JsonError::UnexpectedEndOfInput {
+                                expected: '"'.to_string(),
+                                position: self.position,
+                            });
                         }
                     }
                     tokens.push(Token::String(string_value));
@@ -137,10 +87,17 @@ impl Tokenizer {
                 '0'..='9' | '-' => {
                     let mut string_value = String::new();
                     while let Some(next_char) = self.peek() {
-                        if next_char.is_ascii_digit() || next_char == '.' || next_char == '-' {
-                            string_value.push(self.advance().unwrap_or_default());
-                        } else {
-                            break;
+                        let valid_char: bool =
+                            next_char.is_ascii_digit() || next_char == '.' || next_char == '-';
+                        match valid_char {
+                            true => {
+                                if let Some(c) = self.advance() {
+                                    string_value.push(c);
+                                }
+                            }
+                            _ => {
+                                break;
+                            }
                         }
                     }
 
@@ -157,10 +114,15 @@ impl Tokenizer {
                 _ if ch.is_alphabetic() => {
                     let mut string_value = String::new();
                     while let Some(next_ch) = self.peek() {
-                        if next_ch.is_alphabetic() {
-                            string_value.push(self.advance().unwrap_or_default());
-                        } else {
-                            break;
+                        match next_ch.is_alphabetic() {
+                            true => {
+                                if let Some(c) = self.advance() {
+                                    string_value.push(c);
+                                }
+                            }
+                            _ => {
+                                break;
+                            }
                         }
                     }
 
@@ -190,6 +152,62 @@ impl Tokenizer {
             }
         }
         Ok(tokens)
+    }
+
+    fn parse_escape_seq(&mut self, mut string_value: String) -> Result<String, JsonError> {
+        self.advance();
+        match self.advance() {
+            Some('"') => string_value.push('"'),
+            Some('\\') => string_value.push('\\'),
+            Some('/') => string_value.push('/'),
+            Some('b') => string_value.push('\x08'),
+            Some('f') => string_value.push('\x0C'),
+            Some('n') => string_value.push('\n'),
+            Some('r') => string_value.push('\r'),
+            Some('t') => string_value.push('\t'),
+            Some('u') => {
+                let mut hex_string = String::new();
+
+                while !self.is_at_end() && hex_string.len() <= 3 {
+                    if let Some(c) = self.advance()
+                        && c.is_ascii_hexdigit()
+                    {
+                        hex_string.push(c);
+                    }
+                }
+
+                if hex_string.len() < 4 {
+                    return Err(JsonError::InvalidUnicode {
+                        sequence: hex_string,
+                        position: self.position,
+                    });
+                }
+
+                let code_point = u32::from_str_radix(&hex_string, 16);
+                match code_point {
+                    Ok(n) => {
+                        let hex_digit = char::from_u32(n);
+                        if let Some(n) = hex_digit {
+                            string_value.push(n);
+                        }
+                    }
+                    Err(_) => {
+                        return Err(JsonError::InvalidUnicode {
+                            sequence: hex_string,
+                            position: self.position,
+                        });
+                    }
+                }
+            }
+            other => {
+                return Err(JsonError::InvalidEscape {
+                    char: other.unwrap_or('?'),
+                    position: self.position,
+                });
+            }
+        }
+
+        Ok(string_value)
     }
 
     fn advance(&mut self) -> Option<char> {
