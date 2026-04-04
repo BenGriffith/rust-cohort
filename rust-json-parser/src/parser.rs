@@ -56,6 +56,10 @@ impl JsonParser {
                             json_array.push(JsonValue::Boolean(b));
                             self.advance();
                         }
+                        Token::Null => {
+                            json_array.push(JsonValue::Null);
+                            self.advance();
+                        }
                         Token::Comma => {
                             self.advance();
                         }
@@ -231,10 +235,65 @@ mod tests {
         }
 
         #[test]
+        fn test_parse_array_single() {
+            let value = parse_json("[1]").unwrap();
+            assert_eq!(value, JsonValue::Array(vec![JsonValue::Number(1.0)]));
+        }
+
+        #[test]
+        fn test_parse_array_multiple() {
+            let value = parse_json("[1, 2, 3]").unwrap();
+            let expected = JsonValue::Array(vec![
+                JsonValue::Number(1.0),
+                JsonValue::Number(2.0),
+                JsonValue::Number(3.0),
+            ]);
+            assert_eq!(value, expected);
+        }
+
+        #[test]
+        fn test_parse_array_mixed_types() {
+            let value = parse_json(r#"[1, "two", true, null]"#).unwrap();
+            let expected = JsonValue::Array(vec![
+                JsonValue::Number(1.0),
+                JsonValue::String("two".to_string()),
+                JsonValue::Boolean(true),
+                JsonValue::Null,
+            ]);
+            assert_eq!(value, expected);
+        }
+
+        // #[test]
+        // fn test_parse_nested_arrays() {
+        //     let value = parse_json("[[1, 2], [3, 4]]").unwrap();
+        //     let expected = JsonValue::Array(vec![
+        //         JsonValue::Array(vec![JsonValue::Number(1.0), JsonValue::Number(2.0)]),
+        //         JsonValue::Array(vec![JsonValue::Number(3.0), JsonValue::Number(4.0)]),
+        //     ]);
+        //     assert_eq!(value, expected);
+        // }
+
+        // #[test]
+        // fn test_parse_deeply_nested() {
+        //     let value = parse_json("[[[1]]]").unwrap();
+        //     let expected = JsonValue::Array(vec![JsonValue::Array(vec![JsonValue::Array(vec![
+        //         JsonValue::Number(1.0),
+        //     ])])]);
+        //     assert_eq!(value, expected);
+        // }
+
+        #[test]
         fn test_array_accessor() {
             let value = parse_json("[1, 2, 3]").unwrap();
             let arr = value.as_array().unwrap();
             assert_eq!(arr.len(), 3);
+        }
+
+        #[test]
+        fn test_array_get_index() {
+            let value = parse_json("[10, 20, 30]").unwrap();
+            assert_eq!(value.get_index(1), Some(&JsonValue::Number(20.0)));
+            assert_eq!(value.get_index(5), None);
         }
     }
 }

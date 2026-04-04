@@ -36,9 +36,21 @@ impl JsonValue {
         }
     }
 
+    // returns the inner vec if this is an array
     pub fn as_array(&self) -> Option<&Vec<JsonValue>> {
         match self {
-            JsonValue::Array(e) => Some(e),
+            JsonValue::Array(a) => Some(a),
+            _ => None,
+        }
+    }
+
+    // pub fn as_object(&self) -> Option<&HashMap<String, JsonValue>> {}
+
+    // pub fn get(&self) -> Option<&JsonValue> {}
+
+    pub fn get_index(&self, index: usize) -> Option<&JsonValue> {
+        match self {
+            JsonValue::Array(a) => a.get(index),
             _ => None,
         }
     }
