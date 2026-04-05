@@ -49,6 +49,7 @@ impl JsonParser {
                 let json_object = self.parse_object()?;
                 Ok(JsonValue::Object(json_object))
             }
+
             other => Err(JsonError::UnexpectedToken {
                 expected: "valid JSON token".to_string(),
                 found: format!("{:?}", other),
@@ -57,41 +58,61 @@ impl JsonParser {
         }
     }
 
-    fn parse_array(&self) -> Result<Vec<JsonValue>> {
+    fn parse_array(&mut self) -> Result<Vec<JsonValue>> {
+        println!("self.tokens {:?}", self.tokens);
+        // let parse_result = self.parse()?;
+        // println!("parse_result {:?}", parse_result);
+        // let parse_result = self.parse()?;
+        // match parse_result {
+        //     JsonValue::Array(x) => println!("boom shakalaka {:?}", x),
+        //     _ => {
+        //         self.parse()?;
+        //     }
+        // }
+        // let mut result = self.parse()?;
         let mut json_array: Vec<JsonValue> = vec![];
-        for token in self.tokens.iter().enumerate() {
-            match token.1 {
+        // for token in self.tokens.iter().enumerate() {
+        // match token.1 {
+        while let Some(current_token) = self.advance() {
+            println!("current_token {:?}", current_token);
+            match current_token {
                 Token::String(s) => {
-                    if self.missing_comma(token.0)? {
-                        json_array.push(JsonValue::String(s.to_string()));
-                    }
+                    // if self.missing_comma(token.0)? {
+                    json_array.push(JsonValue::String(s.to_string()));
+                    // }
                 }
                 Token::Number(n) => {
-                    if self.missing_comma(token.0)? {
-                        json_array.push(JsonValue::Number(*n));
-                    }
+                    // if self.missing_comma(token.0)? {
+                    json_array.push(JsonValue::Number(n));
+                    // }
                 }
                 Token::Boolean(b) => {
-                    if self.missing_comma(token.0)? {
-                        json_array.push(JsonValue::Boolean(*b));
-                    }
+                    // if self.missing_comma(token.0)? {
+                    json_array.push(JsonValue::Boolean(b));
+                    // }
                 }
                 Token::Null => {
-                    if self.missing_comma(token.0)? {
-                        json_array.push(JsonValue::Null);
-                    }
+                    // if self.missing_comma(token.0)? {
+                    json_array.push(JsonValue::Null);
+                    // }
                 }
-                Token::Comma => match self.tokens.get(token.0 + 1) {
-                    Some(Token::RightBracket) => {
-                        return Err(JsonError::TrailingComma {
-                            position: token.0,
-                            expected: ']',
-                        })
-                    }
-                    _ => {
-                        continue;
-                    }
-                },
+                // Token::Comma => match self.get_index(self.position) {
+                //     Some(Token::RightBracket) => {
+                //         return Err(JsonError::TrailingComma {
+                //             position: self.previous,
+                //             expected: ']',
+                //         })
+                //     }
+                Token::Comma => {
+                    continue;
+                }
+
+                Token::LeftBracket => {
+                    self.position -= 1;
+                    // println!("Token::LeftBracket {:?}", self.parse()?);
+                    let result = self.parse()?;
+                    json_array.push(result);
+                }
                 Token::RightBracket => {
                     break;
                 }
@@ -384,15 +405,15 @@ mod tests {
             assert_eq!(value, expected);
         }
 
-        // #[test]
-        // fn test_parse_nested_arrays() {
-        //     let value = parse_json("[[1, 2], [3, 4]]").unwrap();
-        //     let expected = JsonValue::Array(vec![
-        //         JsonValue::Array(vec![JsonValue::Number(1.0), JsonValue::Number(2.0)]),
-        //         JsonValue::Array(vec![JsonValue::Number(3.0), JsonValue::Number(4.0)]),
-        //     ]);
-        //     assert_eq!(value, expected);
-        // }
+        #[test]
+        fn test_parse_nested_arrays() {
+            let value = parse_json("[[1, 2], [3, 4]]").unwrap();
+            let expected = JsonValue::Array(vec![
+                JsonValue::Array(vec![JsonValue::Number(1.0), JsonValue::Number(2.0)]),
+                JsonValue::Array(vec![JsonValue::Number(3.0), JsonValue::Number(4.0)]),
+            ]);
+            assert_eq!(value, expected);
+        }
 
         // #[test]
         // fn test_parse_deeply_nested() {
