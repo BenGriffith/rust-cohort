@@ -1,4 +1,3 @@
-use crate::Token;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -32,7 +31,12 @@ pub enum JsonError {
         expected: char,
     },
     ExpectedColon {
-        found: char,
+        position: usize,
+    },
+    InvalidKey {
+        position: usize,
+    },
+    ExpectedComma {
         position: usize,
     },
 }
@@ -81,8 +85,14 @@ impl fmt::Display for JsonError {
                     expected, position
                 )
             }
-            JsonError::ExpectedColon { found, position } => {
-                write!(f, "Expected Colon at {}: found: {}", position, found) // FIX
+            JsonError::ExpectedColon { position } => {
+                write!(f, "Expected colon at position: {}", position)
+            }
+            JsonError::InvalidKey { position } => {
+                write!(f, "Invalid key at position: {}. Expected String", position)
+            }
+            JsonError::ExpectedComma { position } => {
+                write!(f, "Expected comma at position: {}", position)
             }
         }
     }

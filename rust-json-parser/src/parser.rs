@@ -61,15 +61,30 @@ impl JsonParser {
         let mut json_array: Vec<JsonValue> = vec![];
         for token in self.tokens.iter().enumerate() {
             match token.1 {
-                Token::String(s) => json_array.push(JsonValue::String(s.to_string())),
-                Token::Number(n) => json_array.push(JsonValue::Number(*n)),
-                Token::Boolean(b) => json_array.push(JsonValue::Boolean(*b)),
+                Token::String(s) => {
+                    let missing_comma = self.missing_comma(token.0)?;
+                    if missing_comma {
+                        json_array.push(JsonValue::String(s.to_string()));
+                    }
+                }
+                Token::Number(n) => {
+                    let missing_comma = self.missing_comma(token.0)?;
+                    if missing_comma {
+                        json_array.push(JsonValue::Number(*n));
+                    }
+                }
+                Token::Boolean(b) => {
+                    let missing_comma = self.missing_comma(token.0)?;
+                    if missing_comma {
+                        json_array.push(JsonValue::Boolean(*b));
+                    }
+                }
                 Token::Null => json_array.push(JsonValue::Null),
                 Token::Comma => match self.tokens.get(token.0 + 1) {
                     Some(Token::RightBracket) => {
-                        return Err(JsonError::UnexpectedEndOfInput {
-                            expected: "token other than RightBracket".to_string(),
-                            position: self.previous,
+                        return Err(JsonError::TrailingComma {
+                            position: token.0,
+                            expected: ']',
                         })
                     }
                     _ => {
@@ -99,53 +114,77 @@ impl JsonParser {
         while let Some(key_token) = self.advance() {
             println!("key_token {:?}", key_token);
             match key_token {
-                Token::String(s) => {
-                    match self.advance() {
-                        Some(Token::Colon) => {
-                            self.advance();
-                        }
-                        _ => {
-                            return Err(JsonError::ExpectedColon {
-                                found: '?',
-                                position: self.previous,
-                            })
+                Token::String(s) => match self.advance() {
+                    Some(Token::Colon) => {
+                        while let Some(value_token) = self.advance() {
+                            println!("value_token {:?}", value_token);
+                            match value_token {
+                                Token::String(st) => {
+                                    json_object.insert(s.clone(), JsonValue::String(st));
+                                    break;
+                                }
+                                Token::Number(n) => {
+                                    json_object.insert(s.clone(), JsonValue::Number(n));
+                                    break;
+                                }
+                                Token::Boolean(b) => {
+                                    json_object.insert(s.clone(), JsonValue::Boolean(b));
+                                    break;
+                                }
+                                Token::Comma => match self.tokens.get(self.position) {
+                                    Some(Token::RightBrace) => {
+                                        return Err(JsonError::TrailingComma {
+                                            position: self.previous,
+                                            expected: ']',
+                                        })
+                                    }
+                                    _ => {
+                                        continue;
+                                    }
+                                },
+                                _ => {
+                                    break;
+                                }
+                            }
                         }
                     }
-                    while let Some(value_token) = self.advance() {
-                        println!("value_token {:?}", value_token);
-                        match value_token {
-                            Token::String(st) => {
-                                json_object.insert(s.clone(), JsonValue::String(st));
-                                break;
-                            }
-                            Token::Number(n) => {
-                                json_object.insert(s.clone(), JsonValue::Number(n));
-                                break;
-                            }
-                            Token::Boolean(b) => {
-                                json_object.insert(s.clone(), JsonValue::Boolean(b));
-                                break;
-                            }
-                            Token::Comma => {
-                                continue;
-                            }
-                            _ => {
-                                break;
-                            }
-                        }
+                    _ => {
+                        return Err(JsonError::ExpectedColon {
+                            position: self.previous,
+                        })
                     }
-                }
+                },
+                Token::Comma => match self.tokens.get(self.position) {
+                    Some(Token::RightBrace) => {
+                        return Err(JsonError::TrailingComma {
+                            position: self.previous,
+                            expected: ']',
+                        })
+                    }
+                    _ => {
+                        continue;
+                    }
+                },
                 Token::RightBrace => {
                     break;
                 }
                 _ => {
-                    continue;
+                    return Err(JsonError::InvalidKey {
+                        position: self.previous,
+                    })
                 }
             }
         }
 
         println!("json object {:?}", json_object);
         Ok(json_object)
+    }
+
+    fn missing_comma(&self, pos: usize) -> Result<bool> {
+        match self.tokens.get(pos + 1) {
+            Some(Token::Comma) => Ok(true),
+            _ => return Err(JsonError::ExpectedComma { position: pos + 1 }),
+        }
     }
 
     fn advance(&mut self) -> Option<Token> {
@@ -474,29 +513,29 @@ mod tests {
             assert!(result.is_err());
         }
 
-        // #[test]
-        // fn test_error_trailing_comma_object() {
-        //     let result = parse_json(r#"{"a": 1,}"#);
-        //     assert!(result.is_err());
-        // }
+        #[test]
+        fn test_error_trailing_comma_object() {
+            let result = parse_json(r#"{"a": 1,}"#);
+            assert!(result.is_err());
+        }
 
-        // #[test]
-        // fn test_error_missing_colon() {
-        //     let result = parse_json(r#"{"key" 1}"#);
-        //     assert!(result.is_err());
-        // }
+        #[test]
+        fn test_error_missing_colon() {
+            let result = parse_json(r#"{"key" 1}"#);
+            assert!(result.is_err());
+        }
 
-        // #[test]
-        // fn test_error_invalid_key() {
-        //     let result = parse_json(r#"{123: "value"}"#);
-        //     assert!(result.is_err());
-        // }
+        #[test]
+        fn test_error_invalid_key() {
+            let result = parse_json(r#"{123: "value"}"#);
+            assert!(result.is_err());
+        }
 
-        // #[test]
-        // fn test_error_missing_comma_array() {
-        //     let result = parse_json("[1 2 3]");
-        //     assert!(result.is_err());
-        // }
+        #[test]
+        fn test_error_missing_comma_array() {
+            let result = parse_json("[1 2 3]");
+            assert!(result.is_err());
+        }
 
         // #[test]
         // fn test_error_missing_comma_object() {
