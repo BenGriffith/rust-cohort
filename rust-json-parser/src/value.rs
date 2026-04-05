@@ -51,7 +51,12 @@ impl JsonValue {
         }
     }
 
-    // pub fn get(&self) -> Option<&JsonValue> {}
+    pub fn get(&self, key: String) -> Option<&JsonValue> {
+        match self {
+            JsonValue::Object(o) => o.get(&key),
+            _ => None,
+        }
+    }
 
     pub fn get_index(&self, index: usize) -> Option<&JsonValue> {
         match self {
