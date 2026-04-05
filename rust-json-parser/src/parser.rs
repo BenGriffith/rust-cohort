@@ -46,50 +46,7 @@ impl JsonParser {
                 Ok(JsonValue::Array(json_array))
             }
             Some(Token::LeftBrace) => {
-                println!("self.tokens {:?}", self.tokens);
-                let mut json_object: HashMap<String, JsonValue> = HashMap::new();
-
-                while let Some(key_token) = self.advance() {
-                    println!("key_token {:?}", key_token);
-                    match key_token {
-                        Token::String(s) => {
-                            while let Some(value_token) = self.advance() {
-                                println!("value_token {:?}", value_token);
-                                match value_token {
-                                    Token::String(st) => {
-                                        json_object.insert(s.clone(), JsonValue::String(st));
-                                        break;
-                                    }
-                                    Token::Number(n) => {
-                                        json_object.insert(s.clone(), JsonValue::Number(n));
-                                        break;
-                                    }
-                                    Token::Boolean(b) => {
-                                        json_object.insert(s.clone(), JsonValue::Boolean(b));
-                                        break;
-                                    }
-                                    Token::Colon => {
-                                        continue;
-                                    }
-                                    Token::Comma => {
-                                        continue;
-                                    }
-                                    _ => {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        Token::RightBrace => {
-                            break;
-                        }
-                        _ => {
-                            continue;
-                        }
-                    }
-                }
-
-                println!("json object {:?}", json_object);
+                let json_object = self.parse_object()?;
                 Ok(JsonValue::Object(json_object))
             }
             other => Err(JsonError::UnexpectedToken {
@@ -128,6 +85,54 @@ impl JsonParser {
             }
         }
         Ok(json_array)
+    }
+
+    fn parse_object(&mut self) -> Result<HashMap<String, JsonValue>> {
+        println!("self.tokens {:?}", self.tokens);
+        let mut json_object: HashMap<String, JsonValue> = HashMap::new();
+
+        while let Some(key_token) = self.advance() {
+            println!("key_token {:?}", key_token);
+            match key_token {
+                Token::String(s) => {
+                    while let Some(value_token) = self.advance() {
+                        println!("value_token {:?}", value_token);
+                        match value_token {
+                            Token::String(st) => {
+                                json_object.insert(s.clone(), JsonValue::String(st));
+                                break;
+                            }
+                            Token::Number(n) => {
+                                json_object.insert(s.clone(), JsonValue::Number(n));
+                                break;
+                            }
+                            Token::Boolean(b) => {
+                                json_object.insert(s.clone(), JsonValue::Boolean(b));
+                                break;
+                            }
+                            Token::Colon => {
+                                continue;
+                            }
+                            Token::Comma => {
+                                continue;
+                            }
+                            _ => {
+                                break;
+                            }
+                        }
+                    }
+                }
+                Token::RightBrace => {
+                    break;
+                }
+                _ => {
+                    continue;
+                }
+            }
+        }
+
+        println!("json object {:?}", json_object);
+        Ok(json_object)
     }
 
     fn advance(&mut self) -> Option<Token> {
