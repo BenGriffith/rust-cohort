@@ -106,6 +106,10 @@ impl JsonParser {
                 Token::Comma => {
                     continue;
                 }
+                Token::LeftBrace => {
+                    let result = self.parse_object()?;
+                    json_array.push(JsonValue::Object(result));
+                }
 
                 Token::LeftBracket => {
                     self.position -= 1;
@@ -142,28 +146,37 @@ impl JsonParser {
                             println!("value_token {:?}", value_token);
                             match value_token {
                                 Token::String(st) => {
-                                    if self.missing_comma(self.position)? {
-                                        json_object.insert(s.clone(), JsonValue::String(st));
-                                        break;
-                                    }
+                                    // if self.missing_comma(self.position)? {
+                                    json_object.insert(s.clone(), JsonValue::String(st));
+                                    break;
+                                    // }
                                 }
                                 Token::Number(n) => {
-                                    if self.missing_comma(self.position)? {
-                                        json_object.insert(s.clone(), JsonValue::Number(n));
-                                        break;
-                                    }
+                                    // if self.missing_comma(self.position)? {
+                                    json_object.insert(s.clone(), JsonValue::Number(n));
+                                    break;
+                                    // }
                                 }
                                 Token::Boolean(b) => {
-                                    if self.missing_comma(self.position)? {
-                                        json_object.insert(s.clone(), JsonValue::Boolean(b));
-                                        break;
-                                    }
+                                    // if self.missing_comma(self.position)? {
+                                    json_object.insert(s.clone(), JsonValue::Boolean(b));
+                                    break;
+                                    // }
                                 }
                                 Token::Null => {
-                                    if self.missing_comma(self.position)? {
-                                        json_object.insert(s.clone(), JsonValue::Null);
-                                        break;
-                                    }
+                                    // if self.missing_comma(self.position)? {
+                                    json_object.insert(s.clone(), JsonValue::Null);
+                                    break;
+                                    // }
+                                }
+                                Token::LeftBrace => {
+                                    self.position -= 1;
+                                    let result = self.parse()?;
+                                    json_object.insert(s.clone(), result);
+                                }
+                                Token::LeftBracket => {
+                                    let result = self.parse_array()?;
+                                    json_object.insert(s.clone(), JsonValue::Array(result));
                                 }
                                 Token::Comma => match self.tokens.get(self.position) {
                                     Some(Token::RightBrace) => {
@@ -188,6 +201,11 @@ impl JsonParser {
                         })
                     }
                 },
+                // Token::LeftBrace => {
+                //     self.position -= 1;
+                //     let result = self.parse()?;
+                //     join_object(result);
+                // }
                 Token::Comma => match self.tokens.get(self.position) {
                     Some(Token::RightBrace) => {
                         return Err(JsonError::TrailingComma {
@@ -415,14 +433,14 @@ mod tests {
             assert_eq!(value, expected);
         }
 
-        // #[test]
-        // fn test_parse_deeply_nested() {
-        //     let value = parse_json("[[[1]]]").unwrap();
-        //     let expected = JsonValue::Array(vec![JsonValue::Array(vec![JsonValue::Array(vec![
-        //         JsonValue::Number(1.0),
-        //     ])])]);
-        //     assert_eq!(value, expected);
-        // }
+        #[test]
+        fn test_parse_deeply_nested() {
+            let value = parse_json("[[[1]]]").unwrap();
+            let expected = JsonValue::Array(vec![JsonValue::Array(vec![JsonValue::Array(vec![
+                JsonValue::Number(1.0),
+            ])])]);
+            assert_eq!(value, expected);
+        }
 
         #[test]
         fn test_array_accessor() {
@@ -470,43 +488,43 @@ mod tests {
             }
         }
 
-        // #[test]
-        // fn test_parse_nested_object() {
-        //     let value = parse_json(r#"{"outer": {"inner": 1}}"#).unwrap();
-        //     if let JsonValue::Object(outer) = value {
-        //         if let Some(JsonValue::Object(inner)) = outer.get("outer") {
-        //             assert_eq!(inner.get("inner"), Some(&JsonValue::Number(1.0)));
-        //         } else {
-        //             panic!("Expected nested object");
-        //         }
-        //     } else {
-        //         panic!("Expected object");
-        //     }
-        // }
+        #[test]
+        fn test_parse_nested_object() {
+            let value = parse_json(r#"{"outer": {"inner": 1}}"#).unwrap();
+            if let JsonValue::Object(outer) = value {
+                if let Some(JsonValue::Object(inner)) = outer.get("outer") {
+                    assert_eq!(inner.get("inner"), Some(&JsonValue::Number(1.0)));
+                } else {
+                    panic!("Expected nested object");
+                }
+            } else {
+                panic!("Expected object");
+            }
+        }
 
-        // #[test]
-        // fn test_parse_array_in_object() {
-        //     let value = parse_json(r#"{"items": [1, 2, 3]}"#).unwrap();
-        //     if let JsonValue::Object(obj) = value {
-        //         if let Some(JsonValue::Array(arr)) = obj.get("items") {
-        //             assert_eq!(arr.len(), 3);
-        //         } else {
-        //             panic!("Expected array");
-        //         }
-        //     } else {
-        //         panic!("Expected object");
-        //     }
-        // }
+        #[test]
+        fn test_parse_array_in_object() {
+            let value = parse_json(r#"{"items": [1, 2, 3]}"#).unwrap();
+            if let JsonValue::Object(obj) = value {
+                if let Some(JsonValue::Array(arr)) = obj.get("items") {
+                    assert_eq!(arr.len(), 3);
+                } else {
+                    panic!("Expected array");
+                }
+            } else {
+                panic!("Expected object");
+            }
+        }
 
-        // #[test]
-        // fn test_parse_object_in_array() {
-        //     let value = parse_json(r#"[{"a": 1}, {"b": 2}]"#).unwrap();
-        //     if let JsonValue::Array(arr) = value {
-        //         assert_eq!(arr.len(), 2);
-        //     } else {
-        //         panic!("Expected array");
-        //     }
-        // }
+        #[test]
+        fn test_parse_object_in_array() {
+            let value = parse_json(r#"[{"a": 1}, {"b": 2}]"#).unwrap();
+            if let JsonValue::Array(arr) = value {
+                assert_eq!(arr.len(), 2);
+            } else {
+                panic!("Expected array");
+            }
+        }
 
         #[test]
         fn test_object_accessor() {
