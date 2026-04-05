@@ -1,3 +1,4 @@
+use crate::Token;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,6 +25,14 @@ pub enum JsonError {
         position: usize,
     },
     InvalidPosition {
+        position: usize,
+    },
+    TrailingComma {
+        position: usize,
+        expected: char,
+    },
+    ExpectedColon {
+        found: char,
         position: usize,
     },
 }
@@ -64,6 +73,16 @@ impl fmt::Display for JsonError {
             }
             JsonError::InvalidPosition { position } => {
                 write!(f, "Invalid position: {position}")
+            }
+            JsonError::TrailingComma { expected, position } => {
+                write!(
+                    f,
+                    "Unexpected trailing comma at {}: expected: {}",
+                    expected, position
+                )
+            }
+            JsonError::ExpectedColon { found, position } => {
+                write!(f, "Expected Colon at {}: found: {}", position, found) // FIX
             }
         }
     }
