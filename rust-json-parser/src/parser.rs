@@ -100,27 +100,15 @@ impl JsonParser {
         }
     }
 
-    fn parse_array(&mut self) -> Result<Vec<JsonValue>> {
+    fn parse_array(&self) -> Result<Vec<JsonValue>> {
         let mut json_array: Vec<JsonValue> = vec![];
-        while let Some(current_token) = self.advance() {
-            match current_token {
-                Token::String(s) => {
-                    json_array.push(JsonValue::String(s));
-                    self.advance();
-                }
-                Token::Number(n) => {
-                    json_array.push(JsonValue::Number(n));
-                    self.advance();
-                }
-                Token::Boolean(b) => {
-                    json_array.push(JsonValue::Boolean(b));
-                    self.advance();
-                }
-                Token::Null => {
-                    json_array.push(JsonValue::Null);
-                    self.advance();
-                }
-                Token::Comma => match self.advance() {
+        for token in self.tokens.iter().enumerate() {
+            match token.1 {
+                Token::String(s) => json_array.push(JsonValue::String(s.to_string())),
+                Token::Number(n) => json_array.push(JsonValue::Number(*n)),
+                Token::Boolean(b) => json_array.push(JsonValue::Boolean(*b)),
+                Token::Null => json_array.push(JsonValue::Null),
+                Token::Comma => match self.tokens.get(token.0 + 1) {
                     Some(Token::RightBracket) => {
                         return Err(JsonError::UnexpectedEndOfInput {
                             expected: "token other than RightBracket".to_string(),
@@ -131,8 +119,11 @@ impl JsonParser {
                         continue;
                     }
                 },
-                _ => {
+                Token::RightBracket => {
                     break;
+                }
+                _ => {
+                    continue;
                 }
             }
         }
