@@ -42,33 +42,7 @@ impl JsonParser {
             Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b)),
             Some(Token::Null) => Ok(JsonValue::Null),
             Some(Token::LeftBracket) => {
-                let mut json_array: Vec<JsonValue> = vec![];
-                while let Some(current_token) = self.advance() {
-                    match current_token {
-                        Token::String(s) => {
-                            json_array.push(JsonValue::String(s));
-                            self.advance();
-                        }
-                        Token::Number(n) => {
-                            json_array.push(JsonValue::Number(n));
-                            self.advance();
-                        }
-                        Token::Boolean(b) => {
-                            json_array.push(JsonValue::Boolean(b));
-                            self.advance();
-                        }
-                        Token::Null => {
-                            json_array.push(JsonValue::Null);
-                            self.advance();
-                        }
-                        Token::Comma => {
-                            self.advance();
-                        }
-                        _ => {
-                            break;
-                        }
-                    }
-                }
+                let json_array = self.parse_array()?;
                 Ok(JsonValue::Array(json_array))
             }
             Some(Token::LeftBrace) => {
@@ -124,6 +98,45 @@ impl JsonParser {
                 position: self.previous,
             }),
         }
+    }
+
+    fn parse_array(&mut self) -> Result<Vec<JsonValue>> {
+        let mut json_array: Vec<JsonValue> = vec![];
+        while let Some(current_token) = self.advance() {
+            match current_token {
+                Token::String(s) => {
+                    json_array.push(JsonValue::String(s));
+                    self.advance();
+                }
+                Token::Number(n) => {
+                    json_array.push(JsonValue::Number(n));
+                    self.advance();
+                }
+                Token::Boolean(b) => {
+                    json_array.push(JsonValue::Boolean(b));
+                    self.advance();
+                }
+                Token::Null => {
+                    json_array.push(JsonValue::Null);
+                    self.advance();
+                }
+                Token::Comma => match self.advance() {
+                    Some(Token::RightBracket) => {
+                        return Err(JsonError::UnexpectedEndOfInput {
+                            expected: "token other than RightBracket".to_string(),
+                            position: self.previous,
+                        })
+                    }
+                    _ => {
+                        continue;
+                    }
+                },
+                _ => {
+                    break;
+                }
+            }
+        }
+        Ok(json_array)
     }
 
     fn advance(&mut self) -> Option<Token> {
@@ -429,5 +442,57 @@ mod tests {
             );
             assert_eq!(value.get("missing".to_string()), None);
         }
+    }
+
+    mod error_tests {
+        use super::*;
+
+        #[test]
+        fn test_error_unclosed_array() {
+            let result = parse_json("[1, 2");
+            assert!(result.is_err());
+        }
+
+        // #[test]
+        // fn test_error_unclosed_object() {
+        //     let result = parse_json(r#"{"key": 1"#);
+        //     assert!(result.is_err());
+        // }
+
+        #[test]
+        fn test_error_trailing_comma_array() {
+            let result = parse_json("[1, 2,]");
+            assert!(result.is_err());
+        }
+
+        // #[test]
+        // fn test_error_trailing_comma_object() {
+        //     let result = parse_json(r#"{"a": 1,}"#);
+        //     assert!(result.is_err());
+        // }
+
+        // #[test]
+        // fn test_error_missing_colon() {
+        //     let result = parse_json(r#"{"key" 1}"#);
+        //     assert!(result.is_err());
+        // }
+
+        // #[test]
+        // fn test_error_invalid_key() {
+        //     let result = parse_json(r#"{123: "value"}"#);
+        //     assert!(result.is_err());
+        // }
+
+        // #[test]
+        // fn test_error_missing_comma_array() {
+        //     let result = parse_json("[1 2 3]");
+        //     assert!(result.is_err());
+        // }
+
+        // #[test]
+        // fn test_error_missing_comma_object() {
+        //     let result = parse_json(r#"{"a": 1 "b": 2}"#);
+        //     assert!(result.is_err());
+        // }
     }
 }
