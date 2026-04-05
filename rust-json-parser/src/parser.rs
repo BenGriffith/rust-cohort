@@ -74,41 +74,47 @@ impl JsonParser {
             Some(Token::LeftBrace) => {
                 println!("self.tokens {:?}", self.tokens);
                 let mut json_object: HashMap<String, JsonValue> = HashMap::new();
-                let mut key: String = String::new();
-                while let Some(current_token) = self.advance() {
-                    match current_token {
-                        Token::String(s) => {
-                            key.push_str(&s);
-                        }
-                        _ => {
-                            break;
-                        }
-                    }
-                }
-                println!("key {:?}", key);
 
-                while let Some(current_token) = self.advance() {
-                    match current_token {
+                while let Some(key_token) = self.advance() {
+                    println!("key_token {:?}", key_token);
+                    match key_token {
                         Token::String(s) => {
-                            json_object.insert(key.clone(), JsonValue::String(s));
-                            self.advance();
+                            while let Some(value_token) = self.advance() {
+                                println!("value_token {:?}", value_token);
+                                match value_token {
+                                    Token::String(st) => {
+                                        json_object.insert(s.clone(), JsonValue::String(st));
+                                        break;
+                                    }
+                                    Token::Number(n) => {
+                                        json_object.insert(s.clone(), JsonValue::Number(n));
+                                        break;
+                                    }
+                                    Token::Boolean(b) => {
+                                        json_object.insert(s.clone(), JsonValue::Boolean(b));
+                                        break;
+                                    }
+                                    Token::Colon => {
+                                        continue;
+                                    }
+                                    Token::Comma => {
+                                        continue;
+                                    }
+                                    _ => {
+                                        break;
+                                    }
+                                }
+                            }
                         }
-                        Token::Number(n) => {
-                            json_object.insert(key.clone(), JsonValue::Number(n));
-                            self.advance();
-                        }
-                        Token::Boolean(b) => {
-                            json_object.insert(key.clone(), JsonValue::Boolean(b));
-                            self.advance();
-                        }
-                        Token::Colon => {
-                            self.advance();
+                        Token::RightBrace => {
+                            break;
                         }
                         _ => {
-                            break;
+                            continue;
                         }
                     }
                 }
+
                 println!("json object {:?}", json_object);
                 Ok(JsonValue::Object(json_object))
             }
@@ -341,33 +347,33 @@ mod tests {
     mod object_tests {
         use super::*;
 
-        // #[test]
-        // fn test_parse_empty_object() {
-        //     let value = parse_json("{}").unwrap();
-        //     assert_eq!(value, JsonValue::Object(HashMap::new()));
-        // }
+        #[test]
+        fn test_parse_empty_object() {
+            let value = parse_json("{}").unwrap();
+            assert_eq!(value, JsonValue::Object(HashMap::new()));
+        }
 
-        // #[test]
-        // fn test_parse_object_single_key() {
-        //     let value = parse_json(r#"{"key": "value"}"#).unwrap();
-        //     let mut expected = HashMap::new();
-        //     expected.insert("key".to_string(), JsonValue::String("value".to_string()));
-        //     assert_eq!(value, JsonValue::Object(expected));
-        // }
+        #[test]
+        fn test_parse_object_single_key() {
+            let value = parse_json(r#"{"key": "value"}"#).unwrap();
+            let mut expected = HashMap::new();
+            expected.insert("key".to_string(), JsonValue::String("value".to_string()));
+            assert_eq!(value, JsonValue::Object(expected));
+        }
 
-        // #[test]
-        // fn test_parse_object_multiple_keys() {
-        //     let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
-        //     if let JsonValue::Object(obj) = value {
-        //         assert_eq!(
-        //             obj.get("name"),
-        //             Some(&JsonValue::String("Alice".to_string()))
-        //         );
-        //         assert_eq!(obj.get("age"), Some(&JsonValue::Number(30.0)));
-        //     } else {
-        //         panic!("Expected object");
-        //     }
-        // }
+        #[test]
+        fn test_parse_object_multiple_keys() {
+            let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
+            if let JsonValue::Object(obj) = value {
+                assert_eq!(
+                    obj.get("name"),
+                    Some(&JsonValue::String("Alice".to_string()))
+                );
+                assert_eq!(obj.get("age"), Some(&JsonValue::Number(30.0)));
+            } else {
+                panic!("Expected object");
+            }
+        }
 
         // #[test]
         // fn test_parse_nested_object() {
@@ -414,14 +420,14 @@ mod tests {
             assert_eq!(obj.len(), 1);
         }
 
-        // #[test]
-        // // fn test_object_get() {
-        //     let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
-        //     assert_eq!(
-        //         value.get("name"),
-        //         Some(&JsonValue::String("Alice".to_string()))
-        //     );
-        //     assert_eq!(value.get("missing"), None);
-        // }
+        #[test]
+        fn test_object_get() {
+            let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
+            assert_eq!(
+                value.get("name".to_string()),
+                Some(&JsonValue::String("Alice".to_string()))
+            );
+            assert_eq!(value.get("missing".to_string()), None);
+        }
     }
 }
