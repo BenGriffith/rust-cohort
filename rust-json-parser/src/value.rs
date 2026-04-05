@@ -44,7 +44,12 @@ impl JsonValue {
         }
     }
 
-    // pub fn as_object(&self) -> Option<&HashMap<String, JsonValue>> {}
+    pub fn as_object(&self) -> Option<&HashMap<String, JsonValue>> {
+        match self {
+            JsonValue::Object(o) => Some(o),
+            _ => None,
+        }
+    }
 
     // pub fn get(&self) -> Option<&JsonValue> {}
 

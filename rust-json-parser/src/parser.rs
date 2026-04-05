@@ -1,6 +1,7 @@
 use crate::error::JsonError;
 use crate::tokenizer::{Token, Tokenizer};
 use crate::value::JsonValue;
+use std::collections::HashMap;
 
 // Result type alias for convenience
 type Result<T> = std::result::Result<T, JsonError>;
@@ -70,7 +71,47 @@ impl JsonParser {
                 }
                 Ok(JsonValue::Array(json_array))
             }
-            // Some(Token::LeftBracket) => Ok(JsonValue::String("here we go".to_string())),
+            Some(Token::LeftBrace) => {
+                println!("self.tokens {:?}", self.tokens);
+                let mut json_object: HashMap<String, JsonValue> = HashMap::new();
+                let mut key: String = String::new();
+                while let Some(current_token) = self.advance() {
+                    match current_token {
+                        Token::String(s) => {
+                            key.push_str(&s);
+                        }
+                        _ => {
+                            break;
+                        }
+                    }
+                }
+                println!("key {:?}", key);
+
+                while let Some(current_token) = self.advance() {
+                    match current_token {
+                        Token::String(s) => {
+                            json_object.insert(key.clone(), JsonValue::String(s));
+                            self.advance();
+                        }
+                        Token::Number(n) => {
+                            json_object.insert(key.clone(), JsonValue::Number(n));
+                            self.advance();
+                        }
+                        Token::Boolean(b) => {
+                            json_object.insert(key.clone(), JsonValue::Boolean(b));
+                            self.advance();
+                        }
+                        Token::Colon => {
+                            self.advance();
+                        }
+                        _ => {
+                            break;
+                        }
+                    }
+                }
+                println!("json object {:?}", json_object);
+                Ok(JsonValue::Object(json_object))
+            }
             other => Err(JsonError::UnexpectedToken {
                 expected: "valid JSON token".to_string(),
                 found: format!("{:?}", other),
@@ -220,13 +261,13 @@ mod tests {
         ));
     }
 
+    fn parse_json(input: &str) -> Result<JsonValue> {
+        let mut parser = JsonParser::new(input)?;
+        parser.parse()
+    }
+
     mod array_tests {
         use super::*;
-
-        fn parse_json(input: &str) -> Result<JsonValue> {
-            let mut parser = JsonParser::new(input)?;
-            parser.parse()
-        }
 
         #[test]
         fn test_parse_empty_array() {
@@ -295,5 +336,92 @@ mod tests {
             assert_eq!(value.get_index(1), Some(&JsonValue::Number(20.0)));
             assert_eq!(value.get_index(5), None);
         }
+    }
+
+    mod object_tests {
+        use super::*;
+
+        // #[test]
+        // fn test_parse_empty_object() {
+        //     let value = parse_json("{}").unwrap();
+        //     assert_eq!(value, JsonValue::Object(HashMap::new()));
+        // }
+
+        // #[test]
+        // fn test_parse_object_single_key() {
+        //     let value = parse_json(r#"{"key": "value"}"#).unwrap();
+        //     let mut expected = HashMap::new();
+        //     expected.insert("key".to_string(), JsonValue::String("value".to_string()));
+        //     assert_eq!(value, JsonValue::Object(expected));
+        // }
+
+        // #[test]
+        // fn test_parse_object_multiple_keys() {
+        //     let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
+        //     if let JsonValue::Object(obj) = value {
+        //         assert_eq!(
+        //             obj.get("name"),
+        //             Some(&JsonValue::String("Alice".to_string()))
+        //         );
+        //         assert_eq!(obj.get("age"), Some(&JsonValue::Number(30.0)));
+        //     } else {
+        //         panic!("Expected object");
+        //     }
+        // }
+
+        // #[test]
+        // fn test_parse_nested_object() {
+        //     let value = parse_json(r#"{"outer": {"inner": 1}}"#).unwrap();
+        //     if let JsonValue::Object(outer) = value {
+        //         if let Some(JsonValue::Object(inner)) = outer.get("outer") {
+        //             assert_eq!(inner.get("inner"), Some(&JsonValue::Number(1.0)));
+        //         } else {
+        //             panic!("Expected nested object");
+        //         }
+        //     } else {
+        //         panic!("Expected object");
+        //     }
+        // }
+
+        // #[test]
+        // fn test_parse_array_in_object() {
+        //     let value = parse_json(r#"{"items": [1, 2, 3]}"#).unwrap();
+        //     if let JsonValue::Object(obj) = value {
+        //         if let Some(JsonValue::Array(arr)) = obj.get("items") {
+        //             assert_eq!(arr.len(), 3);
+        //         } else {
+        //             panic!("Expected array");
+        //         }
+        //     } else {
+        //         panic!("Expected object");
+        //     }
+        // }
+
+        // #[test]
+        // fn test_parse_object_in_array() {
+        //     let value = parse_json(r#"[{"a": 1}, {"b": 2}]"#).unwrap();
+        //     if let JsonValue::Array(arr) = value {
+        //         assert_eq!(arr.len(), 2);
+        //     } else {
+        //         panic!("Expected array");
+        //     }
+        // }
+
+        #[test]
+        fn test_object_accessor() {
+            let value = parse_json(r#"{"name": "test"}"#).unwrap();
+            let obj = value.as_object().unwrap();
+            assert_eq!(obj.len(), 1);
+        }
+
+        // #[test]
+        // // fn test_object_get() {
+        //     let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
+        //     assert_eq!(
+        //         value.get("name"),
+        //         Some(&JsonValue::String("Alice".to_string()))
+        //     );
+        //     assert_eq!(value.get("missing"), None);
+        // }
     }
 }
