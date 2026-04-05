@@ -66,7 +66,6 @@ impl JsonParser {
                 Token::Number(n) => json_array.push(JsonValue::Number(n)),
                 Token::Boolean(b) => json_array.push(JsonValue::Boolean(b)),
                 Token::Null => json_array.push(JsonValue::Null),
-
                 Token::Comma => match self.tokens.get(self.position) {
                     Some(Token::RightBracket) => {
                         return Err(JsonError::TrailingComma {
@@ -79,15 +78,13 @@ impl JsonParser {
                     }
                 },
                 Token::LeftBrace => {
-                    let result = self.parse_object()?;
-                    json_array.push(JsonValue::Object(result));
+                    let nested_object = self.parse_object()?;
+                    json_array.push(JsonValue::Object(nested_object));
                 }
-
                 Token::LeftBracket => {
                     self.position -= 1;
-                    // println!("Token::LeftBracket {:?}", self.parse()?);
-                    let result = self.parse()?;
-                    json_array.push(result);
+                    let nested_array = self.parse()?;
+                    json_array.push(nested_array);
                 }
                 Token::RightBracket => {
                     break;
@@ -96,6 +93,7 @@ impl JsonParser {
                     continue;
                 }
             }
+
             match self.tokens.get(self.position) {
                 Some(Token::RightBracket) => {
                     continue;
@@ -106,6 +104,10 @@ impl JsonParser {
                     }
                 }
             }
+        }
+
+        if self.is_at_end() {
+            self.is_unclosed(&Token::RightBracket, "RightBracket".to_string())?;
         }
         Ok(json_array)
     }
@@ -118,7 +120,6 @@ impl JsonParser {
                 Token::String(s) => match self.advance() {
                     Some(Token::Colon) => {
                         while let Some(value_token) = self.advance() {
-                            println!("value_token {:?}", value_token);
                             match value_token {
                                 Token::String(st) => {
                                     json_object.insert(s.clone(), JsonValue::String(st));
@@ -138,12 +139,12 @@ impl JsonParser {
                                 }
                                 Token::LeftBrace => {
                                     self.position -= 1;
-                                    let result = self.parse()?;
-                                    json_object.insert(s.clone(), result);
+                                    let nested_object = self.parse()?;
+                                    json_object.insert(s.clone(), nested_object);
                                 }
                                 Token::LeftBracket => {
-                                    let result = self.parse_array()?;
-                                    json_object.insert(s.clone(), JsonValue::Array(result));
+                                    let nested_array = self.parse_array()?;
+                                    json_object.insert(s.clone(), JsonValue::Array(nested_array));
                                 }
                                 Token::Comma => match self.tokens.get(self.position) {
                                     Some(Token::RightBrace) => {
@@ -193,7 +194,6 @@ impl JsonParser {
                 Token::RightBrace => {
                     break;
                 }
-
                 _ => {
                     return Err(JsonError::InvalidKey {
                         position: self.previous,
@@ -202,12 +202,26 @@ impl JsonParser {
             }
         }
 
-        println!("json object {:?}", json_object);
+        if self.is_at_end() {
+            self.is_unclosed(&Token::RightBrace, "RightBrace".to_string())?;
+        }
         Ok(json_object)
     }
 
+    fn is_unclosed(&self, token: &Token, exp: String) -> Result<bool> {
+        match self.tokens.last() {
+            Some(tok) if tok == token => Ok(true),
+            Some(_) => {
+                return Err(JsonError::UnexpectedEndOfInput {
+                    expected: exp,
+                    position: self.position,
+                })
+            }
+            None => Ok(false),
+        }
+    }
+
     fn missing_comma(&self, pos: usize) -> Result<bool> {
-        println!("missing comma pos: {:?}", pos);
         match self.tokens.get(pos) {
             Some(Token::Comma) => Ok(true),
             _ => return Err(JsonError::ExpectedComma { position: pos }),
@@ -522,17 +536,17 @@ mod tests {
     mod error_tests {
         use super::*;
 
-        // #[test]
-        // fn test_error_unclosed_array() {
-        //     let result = parse_json("[1, 2");
-        //     assert!(result.is_err());
-        // }
+        #[test]
+        fn test_error_unclosed_array() {
+            let result = parse_json("[1, 2");
+            assert!(result.is_err());
+        }
 
-        // #[test]
-        // fn test_error_unclosed_object() {
-        //     let result = parse_json(r#"{"key": 1"#);
-        //     assert!(result.is_err());
-        // }
+        #[test]
+        fn test_error_unclosed_object() {
+            let result = parse_json(r#"{"key": 1"#);
+            assert!(result.is_err());
+        }
 
         #[test]
         fn test_error_trailing_comma_array() {
