@@ -62,24 +62,25 @@ impl JsonParser {
         for token in self.tokens.iter().enumerate() {
             match token.1 {
                 Token::String(s) => {
-                    let missing_comma = self.missing_comma(token.0)?;
-                    if missing_comma {
+                    if self.missing_comma(token.0)? {
                         json_array.push(JsonValue::String(s.to_string()));
                     }
                 }
                 Token::Number(n) => {
-                    let missing_comma = self.missing_comma(token.0)?;
-                    if missing_comma {
+                    if self.missing_comma(token.0)? {
                         json_array.push(JsonValue::Number(*n));
                     }
                 }
                 Token::Boolean(b) => {
-                    let missing_comma = self.missing_comma(token.0)?;
-                    if missing_comma {
+                    if self.missing_comma(token.0)? {
                         json_array.push(JsonValue::Boolean(*b));
                     }
                 }
-                Token::Null => json_array.push(JsonValue::Null),
+                Token::Null => {
+                    if self.missing_comma(token.0)? {
+                        json_array.push(JsonValue::Null);
+                    }
+                }
                 Token::Comma => match self.tokens.get(token.0 + 1) {
                     Some(Token::RightBracket) => {
                         return Err(JsonError::TrailingComma {
@@ -120,16 +121,28 @@ impl JsonParser {
                             println!("value_token {:?}", value_token);
                             match value_token {
                                 Token::String(st) => {
-                                    json_object.insert(s.clone(), JsonValue::String(st));
-                                    break;
+                                    if self.missing_comma(self.position)? {
+                                        json_object.insert(s.clone(), JsonValue::String(st));
+                                        break;
+                                    }
                                 }
                                 Token::Number(n) => {
-                                    json_object.insert(s.clone(), JsonValue::Number(n));
-                                    break;
+                                    if self.missing_comma(self.position)? {
+                                        json_object.insert(s.clone(), JsonValue::Number(n));
+                                        break;
+                                    }
                                 }
                                 Token::Boolean(b) => {
-                                    json_object.insert(s.clone(), JsonValue::Boolean(b));
-                                    break;
+                                    if self.missing_comma(self.position)? {
+                                        json_object.insert(s.clone(), JsonValue::Boolean(b));
+                                        break;
+                                    }
+                                }
+                                Token::Null => {
+                                    if self.missing_comma(self.position)? {
+                                        json_object.insert(s.clone(), JsonValue::Null);
+                                        break;
+                                    }
                                 }
                                 Token::Comma => match self.tokens.get(self.position) {
                                     Some(Token::RightBrace) => {
@@ -537,10 +550,10 @@ mod tests {
             assert!(result.is_err());
         }
 
-        // #[test]
-        // fn test_error_missing_comma_object() {
-        //     let result = parse_json(r#"{"a": 1 "b": 2}"#);
-        //     assert!(result.is_err());
-        // }
+        #[test]
+        fn test_error_missing_comma_object() {
+            let result = parse_json(r#"{"a": 1 "b": 2}"#);
+            assert!(result.is_err());
+        }
     }
 }
