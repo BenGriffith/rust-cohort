@@ -49,7 +49,6 @@ impl JsonParser {
                 let json_object = self.parse_object()?;
                 Ok(JsonValue::Object(json_object))
             }
-
             other => Err(JsonError::UnexpectedToken {
                 expected: "valid JSON token".to_string(),
                 found: format!("{:?}", other),
@@ -108,7 +107,7 @@ impl JsonParser {
         }
 
         if self.is_at_end() {
-            self.is_unclosed(&Token::RightBracket, "RightBracket".to_string())?;
+            self.is_unclosed(&Token::RightBracket, "Token::RightBracket".to_string())?;
         }
         Ok(json_array)
     }
@@ -215,7 +214,7 @@ impl JsonParser {
         }
 
         if self.is_at_end() {
-            self.is_unclosed(&Token::RightBrace, "RightBrace".to_string())?;
+            self.is_unclosed(&Token::RightBrace, "Token::RightBrace".to_string())?;
         }
         Ok(json_object)
     }
