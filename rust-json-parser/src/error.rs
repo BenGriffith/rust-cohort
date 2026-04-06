@@ -26,17 +26,7 @@ pub enum JsonError {
     InvalidPosition {
         position: usize,
     },
-    TrailingComma {
-        position: usize,
-        expected: char,
-    },
     ExpectedColon {
-        position: usize,
-    },
-    InvalidKey {
-        position: usize,
-    },
-    ExpectedComma {
         position: usize,
     },
 }
@@ -78,21 +68,8 @@ impl fmt::Display for JsonError {
             JsonError::InvalidPosition { position } => {
                 write!(f, "Invalid position: {position}")
             }
-            JsonError::TrailingComma { expected, position } => {
-                write!(
-                    f,
-                    "Unexpected trailing comma at {}: expected: {}",
-                    expected, position
-                )
-            }
             JsonError::ExpectedColon { position } => {
-                write!(f, "Expected colon at position: {}", position)
-            }
-            JsonError::InvalidKey { position } => {
-                write!(f, "Invalid key at position: {}. Expected String", position)
-            }
-            JsonError::ExpectedComma { position } => {
-                write!(f, "Expected comma at position: {}", position)
+                write!(f, "Expected Token::Colon at position: {}", position)
             }
         }
     }
