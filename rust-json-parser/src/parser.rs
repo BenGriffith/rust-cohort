@@ -211,12 +211,10 @@ impl JsonParser {
     fn is_unclosed(&self, token: &Token, exp: String) -> Result<bool> {
         match self.tokens.last() {
             Some(tok) if tok == token => Ok(true),
-            Some(_) => {
-                return Err(JsonError::UnexpectedEndOfInput {
-                    expected: exp,
-                    position: self.position,
-                })
-            }
+            Some(_) => Err(JsonError::UnexpectedEndOfInput {
+                expected: exp,
+                position: self.position,
+            }),
             None => Ok(false),
         }
     }
@@ -224,7 +222,7 @@ impl JsonParser {
     fn missing_comma(&self, pos: usize) -> Result<bool> {
         match self.tokens.get(pos) {
             Some(Token::Comma) => Ok(true),
-            _ => return Err(JsonError::ExpectedComma { position: pos }),
+            _ => Err(JsonError::ExpectedComma { position: pos }),
         }
     }
 
