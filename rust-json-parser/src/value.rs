@@ -188,17 +188,17 @@ mod tests {
             assert_eq!(JsonValue::Object(HashMap::new()).to_string(), "{}");
         }
 
-        // #[test]
-        // fn test_display_escape_string() {
-        //     let value = JsonValue::String("hello\nworld".to_string());
-        //     assert_eq!(value.to_string(), "\"hello\\nworld\"");
-        // }
+        #[test]
+        fn test_display_escape_string() {
+            let value = JsonValue::String("hello\nworld".to_string());
+            assert_eq!(value.to_string(), "\"hello\\nworld\"");
+        }
 
-        // #[test]
-        // fn test_display_escape_quotes() {
-        //     let value = JsonValue::String("say \"hi\"".to_string());
-        //     assert_eq!(value.to_string(), "\"say \\\"hi\\\"\"");
-        // }
+        #[test]
+        fn test_display_escape_quotes() {
+            let value = JsonValue::String("say \"hi\"".to_string());
+            assert_eq!(value.to_string(), "\"say \\\"hi\\\"\"");
+        }
 
         #[test]
         fn test_display_nested() {

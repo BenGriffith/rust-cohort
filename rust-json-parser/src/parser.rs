@@ -71,7 +71,7 @@ impl JsonParser {
                         return Err(JsonError::TrailingComma {
                             position: self.previous,
                             expected: ']',
-                        })
+                        });
                     }
                     _ => {
                         continue;
@@ -151,7 +151,7 @@ impl JsonParser {
                                         return Err(JsonError::TrailingComma {
                                             position: self.previous,
                                             expected: ']',
-                                        })
+                                        });
                                     }
                                     _ => {
                                         continue;
@@ -177,7 +177,7 @@ impl JsonParser {
                     _ => {
                         return Err(JsonError::ExpectedColon {
                             position: self.previous,
-                        })
+                        });
                     }
                 },
                 Token::Comma => match self.tokens.get(self.position) {
@@ -185,7 +185,7 @@ impl JsonParser {
                         return Err(JsonError::TrailingComma {
                             position: self.previous,
                             expected: ']',
-                        })
+                        });
                     }
                     _ => {
                         continue;
@@ -197,7 +197,7 @@ impl JsonParser {
                 _ => {
                     return Err(JsonError::InvalidKey {
                         position: self.previous,
-                    })
+                    });
                 }
             }
         }
