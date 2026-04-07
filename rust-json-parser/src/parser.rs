@@ -68,8 +68,8 @@ impl JsonParser {
                 Token::Comma => match self.tokens.get(self.position) {
                     Some(Token::RightBracket) => {
                         return Err(JsonError::UnexpectedToken {
-                            expected: "Token::RightBracket".to_string(),
-                            found: "Token::Comma".to_string(),
+                            expected: "RightBracket".to_string(),
+                            found: "Comma".to_string(),
                             position: self.position,
                         });
                     }
@@ -107,7 +107,7 @@ impl JsonParser {
         }
 
         if self.is_at_end() {
-            self.is_unclosed(&Token::RightBracket, "Token::RightBracket".to_string())?;
+            self.is_unclosed(&Token::RightBracket, "RightBracket".to_string())?;
         }
         Ok(json_array)
     }
@@ -151,8 +151,8 @@ impl JsonParser {
                                 Token::Comma => match self.tokens.get(self.position) {
                                     Some(Token::RightBrace) => {
                                         return Err(JsonError::UnexpectedToken {
-                                            expected: "Token::RightBrace".to_string(),
-                                            found: "Token::Comma".to_string(),
+                                            expected: "RightBrace".to_string(),
+                                            found: "Comma".to_string(),
                                             position: self.previous,
                                         });
                                     }
@@ -179,7 +179,7 @@ impl JsonParser {
                     }
                     Some(other) => {
                         return Err(JsonError::UnexpectedToken {
-                            expected: "Token::Colon".to_string(),
+                            expected: "Colon".to_string(),
                             found: format!("{:?}", other),
                             position: self.previous,
                         });
@@ -193,8 +193,8 @@ impl JsonParser {
                 Token::Comma => match self.tokens.get(self.position) {
                     Some(Token::RightBrace) => {
                         return Err(JsonError::UnexpectedToken {
-                            expected: "Token::RightBrace".to_string(),
-                            found: "Token::Comma".to_string(),
+                            expected: "RightBrace".to_string(),
+                            found: "Comma".to_string(),
                             position: self.previous,
                         });
                     }
@@ -207,7 +207,7 @@ impl JsonParser {
                 }
                 other => {
                     return Err(JsonError::UnexpectedToken {
-                        expected: "Token::String".to_string(),
+                        expected: "String".to_string(),
                         found: format!("{:?}", other),
                         position: self.previous,
                     });
@@ -216,7 +216,7 @@ impl JsonParser {
         }
 
         if self.is_at_end() {
-            self.is_unclosed(&Token::RightBrace, "Token::RightBrace".to_string())?;
+            self.is_unclosed(&Token::RightBrace, "RightBrace".to_string())?;
         }
         Ok(json_object)
     }
@@ -236,7 +236,7 @@ impl JsonParser {
         match self.tokens.get(self.position) {
             Some(Token::Comma) => Ok(true),
             Some(other) => Err(JsonError::UnexpectedToken {
-                expected: "Token::Comma".to_string(),
+                expected: "Comma".to_string(),
                 found: format!("{:?}", other),
                 position: self.position,
             }),
