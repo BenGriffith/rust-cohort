@@ -9,7 +9,7 @@ fn parse_json(json: &str) -> Result<JsonValue> {
 }
 
 fn main() {
-    let json = r#"{
+    let json1 = r#"{
     "name": "Rust JSON Parser",
     "version": 1.0,
     "features": ["arrays", "objects", "nesting"],   
@@ -19,7 +19,19 @@ fn main() {
     }
 }"#;
 
-    let value = parse_json(json).unwrap();
+    let json2: &str = r#"
+{
+    "users": [
+        {"id": 1, "name": "Alice", "active": true},
+        {"id": 2, "name": "Bob", "active": false}
+    ],
+    "metadata": {
+        "version": "1.0",
+        "generated": "2024-01-01"
+    }
+}"#;
+
+    let value = parse_json(json1).unwrap();
     let name = value.get("name".to_string()).unwrap().as_str().unwrap();
     let features = value
         .get("features".to_string())
@@ -37,4 +49,7 @@ fn main() {
 
     // Serialize back to JSON
     println!("{}", value);
+
+    let value2: JsonValue = parse_json(json2).unwrap();
+    println!("{}", value2);
 }
