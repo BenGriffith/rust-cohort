@@ -180,7 +180,7 @@ impl JsonParser {
                             expected: "Token::Colon".to_string(),
                             found: format!("{:?}", other),
                             position: self.previous,
-                        })
+                        });
                     }
                     _ => {
                         return Err(JsonError::ExpectedColon {
