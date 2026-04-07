@@ -94,8 +94,11 @@ impl fmt::Display for JsonValue {
             }
             JsonValue::Object(hm) => {
                 write!(f, "{{")?;
-                for (key, value) in hm {
-                    write!(f, "{:?}: {}", key, value)?;
+                for (i, item) in hm.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{:?}: {}", item.0, item.1)?;
                 }
                 write!(f, "}}")
             }
