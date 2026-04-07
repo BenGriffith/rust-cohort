@@ -1,20 +1,40 @@
 use rust_json_parser::JsonParser;
+use rust_json_parser::JsonValue;
+use rust_json_parser::Result;
+
+fn parse_json(json: &str) -> Result<JsonValue> {
+    let mut parser = JsonParser::new(json)?;
+    let value = parser.parse()?;
+    Ok(value)
+}
 
 fn main() {
-    let input_string = "1 2 3 false @".to_string();
-    let mut parser = JsonParser::new(&input_string);
-    match &parser {
-        Ok(_) => println!("parser created without error"),
-        Err(e) => println!("error: {:?}", e),
+    let json = r#"{
+    "name": "Rust JSON Parser",
+    "version": 1.0,
+    "features": ["arrays", "objects", "nesting"],   
+    "metadata": {
+        "author": "You",
+        "complete": true
     }
+}"#;
 
-    let input_string2 = "4 5 6 true".to_string();
-    let input: Vec<&str> = input_string2.split_whitespace().collect();
-    parser = JsonParser::new(&input_string2);
-    for _ in input {
-        match &mut parser {
-            Ok(p) => println!("parsed value: {:?}", p.parse()),
-            Err(e) => println!("error: {:?}", e),
-        }
-    }
+    let value = parse_json(json).unwrap();
+    let name = value.get("name".to_string()).unwrap().as_str().unwrap();
+    let features = value
+        .get("features".to_string())
+        .unwrap()
+        .as_array()
+        .unwrap();
+    let author = value
+        .get("metadata".to_string())
+        .unwrap()
+        .get("author".to_string())
+        .unwrap();
+    println!("name: {}", name);
+    println!("features: {:?}", features);
+    println!("author: {}", author);
+
+    // Serialize back to JSON
+    println!("{}", value);
 }
