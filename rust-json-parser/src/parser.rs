@@ -141,10 +141,12 @@ impl JsonParser {
                                     self.position -= 1;
                                     let nested_object = self.parse()?;
                                     json_object.insert(s.clone(), nested_object);
+                                    break;
                                 }
                                 Token::LeftBracket => {
                                     let nested_array = self.parse_array()?;
                                     json_object.insert(s.clone(), JsonValue::Array(nested_array));
+                                    break;
                                 }
                                 Token::Comma => match self.tokens.get(self.position) {
                                     Some(Token::RightBrace) => {
