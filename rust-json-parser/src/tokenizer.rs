@@ -1,3 +1,4 @@
+use crate::Result;
 use crate::error::JsonError;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,7 +28,7 @@ impl Tokenizer {
         }
     }
 
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, JsonError> {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>> {
         let mut tokens = Vec::new();
 
         while let Some(ch) = self.peek() {
@@ -85,59 +86,12 @@ impl Tokenizer {
                     tokens.push(Token::String(string_value));
                 }
                 '0'..='9' | '-' => {
-                    let mut string_value = String::new();
-                    while let Some(next_char) = self.peek() {
-                        let valid_char: bool =
-                            next_char.is_ascii_digit() || next_char == '.' || next_char == '-';
-                        match valid_char {
-                            true => {
-                                if let Some(c) = self.advance() {
-                                    string_value.push(c);
-                                }
-                            }
-                            _ => {
-                                break;
-                            }
-                        }
-                    }
-
-                    match string_value.parse::<f64>() {
-                        Ok(n) => tokens.push(Token::Number(n)),
-                        Err(_) => {
-                            return Err(JsonError::InvalidNumber {
-                                value: string_value,
-                                position: self.position,
-                            });
-                        }
-                    }
+                    let num = self.parse_number()?;
+                    tokens.push(Token::Number(num));
                 }
                 _ if ch.is_alphabetic() => {
-                    let mut string_value = String::new();
-                    while let Some(next_ch) = self.peek() {
-                        match next_ch.is_alphabetic() {
-                            true => {
-                                if let Some(c) = self.advance() {
-                                    string_value.push(c);
-                                }
-                            }
-                            _ => {
-                                break;
-                            }
-                        }
-                    }
-
-                    match string_value.as_str() {
-                        "null" => tokens.push(Token::Null),
-                        "true" => tokens.push(Token::Boolean(true)),
-                        "false" => tokens.push(Token::Boolean(false)),
-                        _ => {
-                            return Err(JsonError::UnexpectedToken {
-                                expected: r#""null", "true", or "false""#.to_string(),
-                                found: string_value,
-                                position: self.position,
-                            });
-                        }
-                    }
+                    let keyword = self.parse_keyword()?;
+                    tokens.push(keyword);
                 }
                 _ if ch.is_whitespace() => {
                     self.position += 1;
@@ -154,7 +108,7 @@ impl Tokenizer {
         Ok(tokens)
     }
 
-    fn parse_escape_seq(&mut self, mut string_value: String) -> Result<String, JsonError> {
+    fn parse_escape_seq(&mut self, mut string_value: String) -> Result<String> {
         self.advance();
         match self.advance() {
             Some('"') => string_value.push('"'),
@@ -208,6 +162,58 @@ impl Tokenizer {
         }
 
         Ok(string_value)
+    }
+
+    fn parse_number(&mut self) -> Result<f64> {
+        let mut string_value = String::new();
+        while let Some(next_char) = self.peek() {
+            let valid_char: bool =
+                next_char.is_ascii_digit() || next_char == '.' || next_char == '-';
+            match valid_char {
+                true => {
+                    if let Some(c) = self.advance() {
+                        string_value.push(c);
+                    }
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+
+        match string_value.parse::<f64>() {
+            Ok(n) => Ok(n),
+            Err(_) => Err(JsonError::InvalidNumber {
+                value: string_value,
+                position: self.position,
+            }),
+        }
+    }
+
+    fn parse_keyword(&mut self) -> Result<Token> {
+        let mut string_value = String::new();
+        while let Some(next_ch) = self.peek() {
+            match next_ch.is_alphabetic() {
+                true => {
+                    if let Some(c) = self.advance() {
+                        string_value.push(c);
+                    }
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+        match string_value.as_str() {
+            "null" => Ok(Token::Null),
+            "true" => Ok(Token::Boolean(true)),
+            "false" => Ok(Token::Boolean(false)),
+            _ => Err(JsonError::UnexpectedToken {
+                expected: r#""null", "true", or "false""#.to_string(),
+                found: string_value,
+                position: self.position,
+            }),
+        }
     }
 
     fn advance(&mut self) -> Option<char> {
