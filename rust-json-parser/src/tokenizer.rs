@@ -239,9 +239,6 @@ mod tests {
     use super::*;
     use crate::error::JsonError;
 
-    // Result type alias for cleaner test signatures
-    type Result<T> = std::result::Result<T, JsonError>;
-
     #[test]
     fn test_empty_braces() -> Result<()> {
         let mut json_tokenizer = Tokenizer::new("{}");
