@@ -33,3 +33,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(feature = "python")]
+mod python_bindings;
