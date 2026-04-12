@@ -10,6 +10,9 @@ pub use value::JsonValue;
 
 pub type Result<T> = std::result::Result<T, JsonError>;
 
+#[cfg(feature = "python")]
+mod python_bindings;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -33,6 +36,3 @@ mod tests {
         );
     }
 }
-
-#[cfg(feature = "python")]
-mod python_bindings;
