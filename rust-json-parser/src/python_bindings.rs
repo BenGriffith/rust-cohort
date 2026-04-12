@@ -133,3 +133,21 @@ fn py_to_json_value(obj: &Bound<PyAny>) -> PyResult<JsonValue> {
         "Unsupported type for JSON conversion",
     ))
 }
+
+#[pyfunction]
+#[pyo3(signature = (obj, indent=None))]
+fn dumps(obj: &Bound<PyAny>, indent: Option<usize>) -> PyResult<String> {
+    let json_value = py_to_json_value(obj)?;
+    match indent {
+        Some(n) => Ok(json_value.pretty_print(n)),
+        None => Ok(json_value.to_string()),
+    }
+}
+
+#[pymodule]
+fn _rust_json_parser(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(parse_json, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_json_file, m)?)?;
+    m.add_function(wrap_pyfunction!(dumps, m)?)?;
+    Ok(())
+}
