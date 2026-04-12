@@ -65,6 +65,24 @@ impl JsonValue {
             _ => None,
         }
     }
+
+    pub fn escape_string(s: &str) -> String {
+        let mut escaped = String::from("\"");
+        for c in s.chars() {
+            match c {
+                '"' => escaped.push_str("\\\""),
+                '\\' => escaped.push_str("\\\\"),
+                '\x08' => escaped.push_str("\\b"),
+                '\x0c' => escaped.push_str("\\f"),
+                '\n' => escaped.push_str("\\n"),
+                '\r' => escaped.push_str("\\r"),
+                '\t' => escaped.push_str("\\t"),
+                _ => escaped.push(c),
+            }
+        }
+        escaped.push('"');
+        escaped
+    }
 }
 
 impl fmt::Display for JsonValue {
@@ -80,7 +98,7 @@ impl fmt::Display for JsonValue {
                 write!(f, "{}", n)
             }
             JsonValue::String(s) => {
-                write!(f, "{:?}", s)
+                write!(f, "{}", JsonValue::escape_string(s))
             }
             JsonValue::Array(v) => {
                 write!(f, "[")?;
@@ -98,7 +116,7 @@ impl fmt::Display for JsonValue {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{:?}: {}", item.0, item.1)?;
+                    write!(f, "{}: {}", JsonValue::escape_string(item.0), item.1)?;
                 }
                 write!(f, "}}")
             }
