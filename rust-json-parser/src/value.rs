@@ -65,6 +65,69 @@ impl JsonValue {
             _ => None,
         }
     }
+
+    pub fn escape_string(s: &str) -> String {
+        let mut escaped = String::from("\"");
+        for c in s.chars() {
+            match c {
+                '"' => escaped.push_str("\\\""),
+                '\\' => escaped.push_str("\\\\"),
+                '\x08' => escaped.push_str("\\b"),
+                '\x0c' => escaped.push_str("\\f"),
+                '\n' => escaped.push_str("\\n"),
+                '\r' => escaped.push_str("\\r"),
+                '\t' => escaped.push_str("\\t"),
+                _ => escaped.push(c),
+            }
+        }
+        escaped.push('"');
+        escaped
+    }
+
+    pub fn pretty_print(&self, indent: usize) -> String {
+        self.pretty_print_recursive(0, indent)
+    }
+
+    fn pretty_print_recursive(&self, depth: usize, indent: usize) -> String {
+        let current_indent = " ".repeat(depth * indent);
+        let next_indent = " ".repeat((depth + 1) * indent);
+
+        match self {
+            JsonValue::String(s) => JsonValue::escape_string(s),
+            JsonValue::Number(n) => n.to_string(),
+            JsonValue::Boolean(b) => b.to_string(),
+            JsonValue::Null => "null".to_string(),
+            JsonValue::Array(arr) => {
+                let mut print_string = String::from("[\n");
+                for (i, val) in arr.iter().enumerate() {
+                    print_string.push_str(&next_indent);
+                    print_string.push_str(&val.pretty_print_recursive(depth + 1, indent));
+                    if i < arr.len() - 1 {
+                        print_string.push(',');
+                    }
+                    print_string.push('\n');
+                }
+                print_string.push_str(&current_indent);
+                print_string.push(']');
+                print_string
+            }
+            JsonValue::Object(obj) => {
+                let mut print_string = String::from("{\n");
+                for (i, (key, value)) in obj.iter().enumerate() {
+                    print_string.push_str(&next_indent);
+                    print_string.push_str(&format!("\"{}\": ", key));
+                    print_string.push_str(&value.pretty_print_recursive(depth + 1, indent));
+                    if i < obj.len() - 1 {
+                        print_string.push(',');
+                    }
+                    print_string.push('\n');
+                }
+                print_string.push_str(&current_indent);
+                print_string.push('}');
+                print_string
+            }
+        }
+    }
 }
 
 impl fmt::Display for JsonValue {
@@ -80,7 +143,7 @@ impl fmt::Display for JsonValue {
                 write!(f, "{}", n)
             }
             JsonValue::String(s) => {
-                write!(f, "{:?}", s)
+                write!(f, "{}", JsonValue::escape_string(s))
             }
             JsonValue::Array(v) => {
                 write!(f, "[")?;
@@ -98,7 +161,7 @@ impl fmt::Display for JsonValue {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{:?}: {}", item.0, item.1)?;
+                    write!(f, "{}: {}", JsonValue::escape_string(item.0), item.1)?;
                 }
                 write!(f, "}}")
             }
