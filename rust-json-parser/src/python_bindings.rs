@@ -69,7 +69,7 @@ impl From<JsonError> for PyErr {
             JsonError::ExpectedColon { position } => {
                 PyValueError::new_err(format!("Expected Colon at position: {}", position))
             }
-            JsonError::IOError { message } => PyIOError::new_err(format!("{}", message)),
+            JsonError::IOError { message } => PyIOError::new_err(message.to_string()),
             JsonError::FileNotFound { path } => {
                 PyIOError::new_err(format!("File not found: {}", path))
             }
