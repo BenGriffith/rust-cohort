@@ -42,6 +42,7 @@ impl JsonParser {
             Some(Token::Boolean(b)) => Ok(JsonValue::Boolean(b)),
             Some(Token::Null) => Ok(JsonValue::Null),
             Some(Token::LeftBracket) => {
+                println!("whats the deal");
                 let json_array = self.parse_array()?;
                 Ok(JsonValue::Array(json_array))
             }
@@ -59,55 +60,82 @@ impl JsonParser {
 
     fn parse_array(&mut self) -> Result<Vec<JsonValue>> {
         let mut json_array: Vec<JsonValue> = vec![];
-        while let Some(current_token) = self.advance() {
-            match current_token {
-                Token::String(s) => json_array.push(JsonValue::String(s.to_string())),
-                Token::Number(n) => json_array.push(JsonValue::Number(n)),
-                Token::Boolean(b) => json_array.push(JsonValue::Boolean(b)),
-                Token::Null => json_array.push(JsonValue::Null),
-                Token::Comma => match self.tokens.get(self.position) {
-                    Some(Token::RightBracket) => {
-                        return Err(JsonError::UnexpectedToken {
-                            expected: "RightBracket".to_string(),
-                            found: "Comma".to_string(),
-                            position: self.position,
-                        });
-                    }
-                    _ => {
-                        continue;
-                    }
-                },
-                Token::LeftBrace => {
-                    let nested_object = self.parse_object()?;
-                    json_array.push(JsonValue::Object(nested_object));
-                }
-                Token::LeftBracket => {
-                    self.position -= 1;
-                    let nested_array = self.parse()?;
-                    json_array.push(nested_array);
-                }
-                Token::RightBracket => {
-                    break;
-                }
-                _ => {
-                    continue;
-                }
-            }
-
+        println!("self.tokens: {:?}", self.tokens);
+        while !self.is_at_end() {
+            //self.advance() {
             match self.tokens.get(self.position) {
                 Some(Token::RightBracket) => {
+                    break;
+                }
+                Some(Token::Comma) => {
+                    println!("boom okay");
+                    self.position += 1;
                     continue;
                 }
                 _ => {
-                    if !self.is_at_end() {
-                        self.missing_comma()?;
-                    }
+                    let current_token = self.parse()?;
+                    json_array.push(current_token);
                 }
             }
+
+            // let current_token = self.parse()?;
+            // println!("{}", current_token);
+            // json_array.push(current_token);
+            // match current_token {
+            //     Token::String(s) => json_array.push(JsonValue::String(s.to_string())),
+            //     Token::Number(n) => json_array.push(JsonValue::Number(n)),
+            //     Token::Boolean(b) => json_array.push(JsonValue::Boolean(b)),
+            //     Token::Null => json_array.push(JsonValue::Null),
+            //     Token::Comma => match self.tokens.get(self.position) {
+            //         Some(Token::RightBracket) => {
+            //             return Err(JsonError::UnexpectedToken {
+            //                 expected: "RightBracket".to_string(),
+            //                 found: "Comma".to_string(),
+            //                 position: self.position,
+            //             });
+            //         }
+            //         _ => {
+            //             continue;
+            //         }
+            //     },
+            //     Token::LeftBrace => {
+            //         let nested_object = self.parse_object()?;
+            //         json_array.push(JsonValue::Object(nested_object));
+            //     }
+            //     Token::LeftBracket => {
+            //         self.position -= 1;
+            //         let nested_array = self.parse()?;
+            //         json_array.push(nested_array);
+            //     }
+            //     Token::RightBracket => {
+            //         break;
+            //     }
+            //     _ => {
+            //         continue;
+            //             }
+            //         }
+
+            // match self.tokens.get(self.position) {
+            //     Some(Token::RightBracket) => {
+            //         break;
+            //     }
+            //     _ => {
+            //         if !self.is_at_end() {
+            //             self.missing_comma()?;
+            //         }
+            //     }
+            // }
+
+            //     if self.is_at_end() {
+            //         self.is_unclosed(&Token::RightBracket, "RightBracket".to_string())?;
         }
 
-        if self.is_at_end() {
-            self.is_unclosed(&Token::RightBracket, "RightBracket".to_string())?;
+        println!("here");
+        match self.tokens.get(self.position) {
+            Some(Token::RightBracket) => {
+                println!("okay");
+            }
+            _ => {}
         }
         Ok(json_array)
     }
