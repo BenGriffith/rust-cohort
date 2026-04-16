@@ -8,7 +8,7 @@ fn parse_json(json: &str) -> Result<JsonValue> {
     Ok(value)
 }
 
-fn main() {
+fn main() -> Result<()> {
     let json1 = r#"{
     "name": "Rust JSON Parser",
     "version": 1.0,
@@ -31,25 +31,27 @@ fn main() {
     }
 }"#;
 
-    let value = parse_json(json1).unwrap();
-    let name = value.get("name".to_string()).unwrap().as_str().unwrap();
-    let features = value
-        .get("features".to_string())
-        .unwrap()
-        .as_array()
-        .unwrap();
-    let author = value
-        .get("metadata".to_string())
-        .unwrap()
-        .get("author".to_string())
-        .unwrap();
-    println!("name: {}", name);
-    println!("features: {:?}", features);
-    println!("author: {}", author);
+    let value = parse_json(json1)?;
+    
+    if let Some(key) = value.get("name".to_string()) && let Some(name) = key.as_str() {
+        println!("name: {}", name);
+    }
+
+    if let Some(key) = value.get("features".to_string()) && let Some(features) = key.as_array() {
+        println!("features: {:?}", features)
+    }
+
+    if let Some(metadata) = value.get("metadata".to_string()) 
+        && let Some(author) = metadata.get("author".to_string())
+        && let Some(value) = author.as_str()
+    {
+        println!("author: {}", value);
+    }
 
     // Serialize back to JSON
     println!("{}", value);
 
     let value2: JsonValue = parse_json(json2).unwrap();
     println!("{}", value2);
+    Ok(())
 }
