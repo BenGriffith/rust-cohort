@@ -52,9 +52,9 @@ impl JsonValue {
         }
     }
 
-    pub fn get(&self, key: String) -> Option<&JsonValue> {
+    pub fn get(&self, key: &str) -> Option<&JsonValue> {
         match self {
-            JsonValue::Object(o) => o.get(&key),
+            JsonValue::Object(o) => o.get(key),
             _ => None,
         }
     }

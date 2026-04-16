@@ -32,17 +32,21 @@ fn main() -> Result<()> {
 }"#;
 
     let value = parse_json(json1)?;
-    
-    if let Some(key) = value.get("name".to_string()) && let Some(name) = key.as_str() {
+
+    if let Some(key) = value.get("name")
+        && let Some(name) = key.as_str()
+    {
         println!("name: {}", name);
     }
 
-    if let Some(key) = value.get("features".to_string()) && let Some(features) = key.as_array() {
+    if let Some(key) = value.get("features")
+        && let Some(features) = key.as_array()
+    {
         println!("features: {:?}", features)
     }
 
-    if let Some(metadata) = value.get("metadata".to_string()) 
-        && let Some(author) = metadata.get("author".to_string())
+    if let Some(metadata) = value.get("metadata")
+        && let Some(author) = metadata.get("author")
         && let Some(value) = author.as_str()
     {
         println!("author: {}", value);
