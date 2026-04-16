@@ -1,16 +1,20 @@
-use rust_json_parser::parse_json;
+use rust_json_parser::JsonParser;
 
 fn main() {
-    let inputs: [String; 3] = [
-        "42".to_string(),
-        "false".to_string(),
-        "@invalid".to_string(),
-    ];
-    for input in &inputs {
-        let result = parse_json(input);
-        match result {
-            Ok(pass) => println!("parsed value: {:?}", pass),
-            Err(fail) => println!("{}", fail),
+    let input_string = "1 2 3 false @".to_string();
+    let mut parser = JsonParser::new(&input_string);
+    match &parser {
+        Ok(_) => println!("parser created without error"),
+        Err(e) => println!("error: {:?}", e),
+    }
+
+    let input_string2 = "4 5 6 true".to_string();
+    let input: Vec<&str> = input_string2.split_whitespace().collect();
+    parser = JsonParser::new(&input_string2);
+    for _ in input {
+        match &mut parser {
+            Ok(p) => println!("parsed value: {:?}", p.parse()),
+            Err(e) => println!("error: {:?}", e),
         }
     }
 }
