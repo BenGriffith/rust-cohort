@@ -9,27 +9,28 @@ fn parse_json(json: &str) -> Result<JsonValue> {
 }
 
 fn main() -> Result<()> {
-    let json1 = r#"{
-    "name": "Rust JSON Parser",
-    "version": 1.0,
-    "features": ["arrays", "objects", "nesting"],   
-    "metadata": {
-        "author": "You",
-        "complete": true
-    }
-}"#;
+    let json1 = r#"
+    {
+        "name": "Rust JSON Parser",
+        "version": 1.0,
+        "features": ["arrays", "objects", "nesting"],   
+        "metadata": {
+            "author": "You",
+            "complete": true
+        }
+    }"#;
 
     let json2: &str = r#"
-{
-    "users": [
-        {"id": 1, "name": "Alice", "active": true},
-        {"id": 2, "name": "Bob", "active": false}
-    ],
-    "metadata": {
-        "version": "1.0",
-        "generated": "2024-01-01"
-    }
-}"#;
+    {
+        "users": [
+            {"id": 1, "name": "Alice", "active": true},
+            {"id": 2, "name": "Bob", "active": false}
+        ],
+        "metadata": {
+            "version": "1.0",
+            "generated": "2024-01-01"
+        }
+    }"#;
 
     let value = parse_json(json1)?;
 
@@ -45,11 +46,16 @@ fn main() -> Result<()> {
         println!("features: {:?}", features)
     }
 
-    if let Some(metadata) = value.get("metadata")
-        && let Some(author) = metadata.get("author")
-        && let Some(value) = author.as_str()
-    {
-        println!("author: {}", value);
+    match value.get("metadata") {
+        Some(metadata) => match metadata.get("author") {
+            Some(author) => {
+                if let Some(author) = author.as_str() {
+                    println!("author: {}", author);
+                }
+            }
+            None => println!("author key not fetched"),
+        },
+        None => println!("metadata key not fetched"),
     }
 
     // Serialize back to JSON
