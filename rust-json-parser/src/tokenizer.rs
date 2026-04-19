@@ -68,7 +68,7 @@ impl Tokenizer {
                                 break;
                             }
                             '\\' => {
-                                string_value = self.parse_escape_seq(string_value)?;
+                                string_value = self.is_escape_seq(string_value)?;
                             }
                             _ => {
                                 if let Some(c) = self.advance() {
@@ -86,11 +86,11 @@ impl Tokenizer {
                     tokens.push(Token::String(string_value));
                 }
                 '0'..='9' | '-' => {
-                    let num = self.parse_number()?;
+                    let num = self.is_char_numeric()?;
                     tokens.push(Token::Number(num));
                 }
                 _ if ch.is_alphabetic() => {
-                    let keyword = self.parse_keyword()?;
+                    let keyword = self.is_keyword()?;
                     tokens.push(keyword);
                 }
                 _ if ch.is_whitespace() => {
@@ -108,7 +108,7 @@ impl Tokenizer {
         Ok(tokens)
     }
 
-    fn parse_escape_seq(&mut self, mut string_value: String) -> Result<String> {
+    fn is_escape_seq(&mut self, mut string_value: String) -> Result<String> {
         self.advance();
         match self.advance() {
             Some('"') => string_value.push('"'),
@@ -164,7 +164,7 @@ impl Tokenizer {
         Ok(string_value)
     }
 
-    fn parse_number(&mut self) -> Result<f64> {
+    fn is_char_numeric(&mut self) -> Result<f64> {
         let mut string_value = String::new();
         while let Some(next_char) = self.peek() {
             let valid_char: bool =
@@ -190,7 +190,7 @@ impl Tokenizer {
         }
     }
 
-    fn parse_keyword(&mut self) -> Result<Token> {
+    fn is_keyword(&mut self) -> Result<Token> {
         let mut string_value = String::new();
         while let Some(next_ch) = self.peek() {
             match next_ch.is_alphabetic() {
