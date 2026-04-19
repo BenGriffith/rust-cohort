@@ -68,7 +68,7 @@ impl Tokenizer {
                                 break;
                             }
                             '\\' => {
-                                string_value = self.is_escape_seq(string_value)?;
+                                string_value = self.escape_seq(string_value)?;
                             }
                             _ => {
                                 if let Some(c) = self.advance() {
@@ -108,7 +108,7 @@ impl Tokenizer {
         Ok(tokens)
     }
 
-    fn is_escape_seq(&mut self, mut string_value: String) -> Result<String> {
+    fn escape_seq(&mut self, mut string_value: String) -> Result<String> {
         self.advance();
         match self.advance() {
             Some('"') => string_value.push('"'),
