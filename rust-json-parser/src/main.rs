@@ -8,48 +8,61 @@ fn parse_json(json: &str) -> Result<JsonValue> {
     Ok(value)
 }
 
-fn main() {
-    let json1 = r#"{
-    "name": "Rust JSON Parser",
-    "version": 1.0,
-    "features": ["arrays", "objects", "nesting"],   
-    "metadata": {
-        "author": "You",
-        "complete": true
-    }
-}"#;
+fn main() -> Result<()> {
+    let json1 = r#"
+    {
+        "name": "Rust JSON Parser",
+        "version": 1.0,
+        "features": ["arrays", "objects", "nesting"],   
+        "metadata": {
+            "author": "You",
+            "complete": true
+        }
+    }"#;
 
     let json2: &str = r#"
-{
-    "users": [
-        {"id": 1, "name": "Alice", "active": true},
-        {"id": 2, "name": "Bob", "active": false}
-    ],
-    "metadata": {
-        "version": "1.0",
-        "generated": "2024-01-01"
-    }
-}"#;
+    {
+        "users": [
+            {"id": 1, "name": "Alice", "active": true},
+            {"id": 2, "name": "Bob", "active": false}
+        ],
+        "metadata": {
+            "version": "1.0",
+            "generated": "2024-01-01"
+        }
+    }"#;
 
-    let value = parse_json(json1).unwrap();
-    let name = value.get("name".to_string()).unwrap().as_str().unwrap();
-    let features = value
-        .get("features".to_string())
-        .unwrap()
-        .as_array()
-        .unwrap();
-    let author = value
-        .get("metadata".to_string())
-        .unwrap()
-        .get("author".to_string())
-        .unwrap();
-    println!("name: {}", name);
-    println!("features: {:?}", features);
-    println!("author: {}", author);
+    let value = parse_json(json1)?;
+
+    if let Some(key) = value.get("name")
+        && let Some(name) = key.as_str()
+    {
+        println!("name: {}", name);
+    }
+
+    if let Some(key) = value.get("features")
+        && let Some(features) = key.as_array()
+    {
+        println!("features: {:?}", features)
+    }
+
+    match value.get("metadata") {
+        Some(metadata) => match metadata.get("author") {
+            Some(author) => {
+                if let Some(author) = author.as_str() {
+                    println!("author: {}", author);
+                }
+            }
+            None => println!("author key not fetched"),
+        },
+        None => println!("metadata key not fetched"),
+    }
 
     // Serialize back to JSON
     println!("{}", value);
 
     let value2: JsonValue = parse_json(json2).unwrap();
     println!("{}", value2);
+
+    Ok(())
 }

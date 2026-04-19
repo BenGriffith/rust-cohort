@@ -59,49 +59,28 @@ impl JsonParser {
 
     fn parse_array(&mut self) -> Result<Vec<JsonValue>> {
         let mut json_array: Vec<JsonValue> = vec![];
-        while let Some(current_token) = self.advance() {
-            match current_token {
-                Token::String(s) => json_array.push(JsonValue::String(s.to_string())),
-                Token::Number(n) => json_array.push(JsonValue::Number(n)),
-                Token::Boolean(b) => json_array.push(JsonValue::Boolean(b)),
-                Token::Null => json_array.push(JsonValue::Null),
-                Token::Comma => match self.tokens.get(self.position) {
-                    Some(Token::RightBracket) => {
-                        return Err(JsonError::UnexpectedToken {
-                            expected: "RightBracket".to_string(),
-                            found: "Comma".to_string(),
-                            position: self.position,
-                        });
-                    }
-                    _ => {
-                        continue;
-                    }
-                },
-                Token::LeftBrace => {
-                    let nested_object = self.parse_object()?;
-                    json_array.push(JsonValue::Object(nested_object));
-                }
-                Token::LeftBracket => {
-                    self.position -= 1;
-                    let nested_array = self.parse()?;
-                    json_array.push(nested_array);
-                }
-                Token::RightBracket => {
-                    break;
-                }
-                _ => {
-                    continue;
-                }
-            }
-
+        while !self.is_at_end() {
             match self.tokens.get(self.position) {
                 Some(Token::RightBracket) => {
+                    self.advance();
+                    break;
+                }
+                Some(Token::Comma) => {
+                    self.trailing_comma(&Token::RightBracket, "RightBracket".to_string())?;
+                    self.position += 1;
                     continue;
                 }
                 _ => {
-                    if !self.is_at_end() {
-                        self.missing_comma()?;
+                    json_array.push(self.parse()?);
+                    match self.tokens.get(self.position) {
+                        Some(Token::RightBracket) => {
+                            continue;
+                        }
+                        _ => {
+                            self.missing_comma()?;
+                        }
                     }
+                    continue;
                 }
             }
         }
@@ -112,106 +91,80 @@ impl JsonParser {
         Ok(json_array)
     }
 
+    fn parse_object_value(&mut self) -> Result<Option<JsonValue>> {
+        let mut value: Option<JsonValue> = None;
+        while !self.is_at_end() {
+            match self.tokens.get(self.position) {
+                Some(Token::Comma) => {
+                    self.trailing_comma(&Token::RightBrace, "RightBrace".to_string())?;
+                    self.position += 1;
+                    continue;
+                }
+                _ => {
+                    value = Some(self.parse()?);
+                    match self.tokens.get(self.position) {
+                        Some(Token::RightBrace) => {
+                            break;
+                        }
+                        _ => {
+                            self.missing_comma()?;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        Ok(value)
+    }
+
+    fn parse_object_sep(&mut self) -> Result<bool> {
+        match self.tokens.get(self.position) {
+            Some(Token::Colon) => {
+                self.position += 1;
+                Ok(true)
+            }
+            Some(other) => Err(JsonError::UnexpectedToken {
+                expected: "Colon".to_string(),
+                found: format!("{:?}", other),
+                position: self.position,
+            }),
+            _ => Err(JsonError::ExpectedColon {
+                position: self.previous,
+            }),
+        }
+    }
+
     fn parse_object(&mut self) -> Result<HashMap<String, JsonValue>> {
         let mut json_object: HashMap<String, JsonValue> = HashMap::new();
-
-        while let Some(key_token) = self.advance() {
-            match key_token {
-                Token::String(s) => match self.advance() {
-                    Some(Token::Colon) => {
-                        while let Some(value_token) = self.advance() {
-                            match value_token {
-                                Token::String(st) => {
-                                    json_object.insert(s.clone(), JsonValue::String(st));
-                                    break;
-                                }
-                                Token::Number(n) => {
-                                    json_object.insert(s.clone(), JsonValue::Number(n));
-                                    break;
-                                }
-                                Token::Boolean(b) => {
-                                    json_object.insert(s.clone(), JsonValue::Boolean(b));
-                                    break;
-                                }
-                                Token::Null => {
-                                    json_object.insert(s.clone(), JsonValue::Null);
-                                    break;
-                                }
-                                Token::LeftBrace => {
-                                    self.position -= 1;
-                                    let nested_object = self.parse()?;
-                                    json_object.insert(s.clone(), nested_object);
-                                    break;
-                                }
-                                Token::LeftBracket => {
-                                    let nested_array = self.parse_array()?;
-                                    json_object.insert(s.clone(), JsonValue::Array(nested_array));
-                                    break;
-                                }
-                                Token::Comma => match self.tokens.get(self.position) {
-                                    Some(Token::RightBrace) => {
-                                        return Err(JsonError::UnexpectedToken {
-                                            expected: "RightBrace".to_string(),
-                                            found: "Comma".to_string(),
-                                            position: self.previous,
-                                        });
-                                    }
-                                    _ => {
-                                        continue;
-                                    }
-                                },
-                                _ => {
-                                    break;
-                                }
-                            }
-                        }
-
-                        match self.tokens.get(self.position) {
-                            Some(Token::RightBrace) => {
-                                continue;
-                            }
-                            _ => {
-                                if !self.is_at_end() {
-                                    self.missing_comma()?;
-                                }
-                            }
-                        }
-                    }
-                    Some(other) => {
-                        return Err(JsonError::UnexpectedToken {
-                            expected: "Colon".to_string(),
-                            found: format!("{:?}", other),
-                            position: self.previous,
-                        });
-                    }
-                    _ => {
-                        return Err(JsonError::ExpectedColon {
-                            position: self.previous,
-                        });
-                    }
-                },
-                Token::Comma => match self.tokens.get(self.position) {
-                    Some(Token::RightBrace) => {
-                        return Err(JsonError::UnexpectedToken {
-                            expected: "RightBrace".to_string(),
-                            found: "Comma".to_string(),
-                            position: self.previous,
-                        });
-                    }
-                    _ => {
-                        continue;
-                    }
-                },
-                Token::RightBrace => {
+        while !self.is_at_end() {
+            let mut key = String::new();
+            match self.tokens.get(self.position) {
+                Some(Token::String(s)) => {
+                    key.push_str(s);
+                    self.position += 1;
+                }
+                Some(Token::Comma) => {
+                    self.trailing_comma(&Token::RightBrace, "RightBrace".to_string())?;
+                    self.position += 1;
+                    continue;
+                }
+                Some(Token::RightBrace) => {
+                    self.position += 1;
                     break;
                 }
                 other => {
                     return Err(JsonError::UnexpectedToken {
                         expected: "String".to_string(),
                         found: format!("{:?}", other),
-                        position: self.previous,
+                        position: self.position,
                     });
                 }
+            }
+
+            if self.parse_object_sep()?
+                && let Some(value) = self.parse_object_value()?
+            {
+                json_object.insert(key.clone(), value);
             }
         }
 
@@ -219,6 +172,17 @@ impl JsonParser {
             self.is_unclosed(&Token::RightBrace, "RightBrace".to_string())?;
         }
         Ok(json_object)
+    }
+
+    fn trailing_comma(&self, token: &Token, exp: String) -> Result<bool> {
+        match self.tokens.get(self.position + 1) {
+            Some(tok) if tok != token => Ok(false),
+            _ => Err(JsonError::UnexpectedToken {
+                expected: exp,
+                found: "Comma".to_string(),
+                position: self.position,
+            }),
+        }
     }
 
     fn is_unclosed(&self, token: &Token, exp: String) -> Result<bool> {
@@ -542,10 +506,10 @@ mod tests {
         fn test_object_get() {
             let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
             assert_eq!(
-                value.get("name".to_string()),
+                value.get("name"),
                 Some(&JsonValue::String("Alice".to_string()))
             );
-            assert_eq!(value.get("missing".to_string()), None);
+            assert_eq!(value.get("missing"), None);
         }
     }
 
