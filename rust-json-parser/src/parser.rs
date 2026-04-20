@@ -13,6 +13,31 @@ pub struct JsonParser {
 }
 
 impl JsonParser {
+    /// Creates a new `JsonParser` by tokenizing the provided input string.
+    ///
+    /// This method immediately initializes a [`Tokenizer`], converts the input string
+    /// into a vector of tokens, and prepares the parser for the first [`parse`] call.
+    ///
+    /// # Arguments
+    ///
+    /// *`input` - A string slice containing the raw JSON text to be parsed.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`JsonError`] if:
+    /// * The input contains invalid characters or malformed escape sequences.
+    /// * The input is empty or consists only of whitespace.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use rust_json_parser::JsonParser;
+    /// let parser = JsonParser::new(r#"{"key": "value"}"#);
+    /// assert!(parser.is_ok());
+    ///
+    /// let empty_input = JsonParser::new("");
+    /// assert!(empty_input.is_err());
+    /// ```
     pub fn new(input: &str) -> Result<Self> {
         let mut json_tokenizer = Tokenizer::new(input);
         let json_tokens = json_tokenizer.tokenize()?;
@@ -29,6 +54,28 @@ impl JsonParser {
         })
     }
 
+    /// Parses the token stream into a single [`JsonValue`].
+    ///
+    /// This method can be called multiple times if the input string contains multiple
+    /// sequential JSON values (e.g., `1 2 3`). It will return the next top-level value
+    /// in the stream until the end is reached.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`JsonError`] if:
+    /// * The tokens do not form a valid JSON structure (e.g., unclosed brackets).
+    /// * A trailing comma is found in an array or object.
+    /// * The parser is already at the end of the token stream.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rust_json_parser::JsonParser;
+    /// let mut parser = JsonParser::new("[1, 2, 3]").unwrap();
+    /// let value = parser.parse().unwrap();
+    ///
+    /// assert!(matches!(value, JsonValue::Array(_)));
+    /// ````
     pub fn parse(&mut self) -> Result<JsonValue> {
         if self.is_at_end() {
             return Err(JsonError::InvalidPosition {
