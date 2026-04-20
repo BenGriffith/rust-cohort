@@ -1,13 +1,21 @@
 use std::collections::HashMap;
 use std::fmt;
 
+/// This enum is the core AST (Abstract Syntax Tree) for the parser, providing a
+/// type-safe way to represent and manipulate JSON data structures into Rust.
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonValue {
+    /// Represents a JSON `null` literal.
     Null,
+    /// Represents a JSON boolean: `true` or `false`.
     Boolean(bool),
+    /// Represents a JSON number. Internally stored as `f64`.
     Number(f64),
+    /// Represents a JSON string.
     String(String),
+    /// Represents a JSON array (an ordered list of values).
     Array(Vec<JsonValue>),
+    /// Represents a JSON object (a collection of key/value pairs).
     Object(HashMap<String, JsonValue>),
 }
 

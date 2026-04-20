@@ -1,6 +1,8 @@
 //! # JSON Parser
 //!
 //! A lightweight, hand-rolled JSON parser and tokenizer implemented in Rust.
+//! This crate provides a full pipeline for transforming raw JSON strings into a
+//! structured 'JsonValue' Abstract Syntax Tree (AST).
 //!
 //! ## Core Components
 //!
@@ -18,7 +20,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use your_crate_name::{JsonParser, JsonValue};
+//! use rust_json_parser::{JsonParser, JsonValue};
 //!
 //! let mut parser = JsonParser::new("\"hello\"").unwrap();
 //! let value = parser.parse().unwrap();
