@@ -1,3 +1,30 @@
+//! # JSON Parser
+//!
+//! A lightweight, hand-rolled JSON parser and tokenizer implemented in Rust.
+//!
+//! ## Core Components
+//!
+//! * **Tokenizer**: Lexes raw input strings into a stream of functional JSON tokens.
+//! * **Parser**: Consumes tokens and builds the corresponding `JsonValue` tree,
+//!   handling nested objects and arrays.
+//! * **Value**: Defines the `JsonValue` enum representing all valid JSON types.
+//! * **Error**: Custom error types for robust error handling during lexing and parsing.
+//!
+//! ## Python Integration
+//!
+//! This crate includes optional Python bindings via PyO3. When the `python`
+//! feature is enabled, the parser can be used directly within a Python environment.
+//!
+//! ## Example
+//!
+//! ```rust
+//! use your_crate_name::{JsonParser, JsonValue};
+//!
+//! let mut parser = JsonParser::new("\"hello\"").unwrap();
+//! let value = parser.parse().unwrap();
+//! assert_eq!(value, JsonValue::String("hello".to_string()));
+//! ```
+
 mod error;
 mod parser;
 mod tokenizer;
