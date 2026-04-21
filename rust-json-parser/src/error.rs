@@ -26,6 +26,9 @@ pub enum JsonError {
     InvalidPosition {
         position: usize,
     },
+    ExpectedColon {
+        position: usize,
+    },
 }
 
 impl fmt::Display for JsonError {
@@ -64,6 +67,9 @@ impl fmt::Display for JsonError {
             }
             JsonError::InvalidPosition { position } => {
                 write!(f, "Invalid position: {position}")
+            }
+            JsonError::ExpectedColon { position } => {
+                write!(f, "Expected Token::Colon at position: {}", position)
             }
         }
     }
