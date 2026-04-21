@@ -21,6 +21,16 @@ pub struct Tokenizer {
 }
 
 impl Tokenizer {
+    /// Creates a new `Tokenizer` from a string slice.
+    ///
+    /// The input is internally collected into a `Vec<char>` to handle multi-byte
+    /// characters and allow for easy indexing during tokenization.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use rust_json_parser::Tokenizer;
+    /// let tokenizer = Tokenizer::new(r#"{"key": "value"}"#);
+    /// ```
     pub fn new(input: &str) -> Self {
         Self {
             input: input.chars().collect(),
@@ -28,6 +38,37 @@ impl Tokenizer {
         }
     }
 
+    /// Processes the entire input strin and returns a vector of [`Token`]s.
+    ///
+    /// This method will skip whitespace and identify JSON symbols and literals.
+    /// It returns a [`JsonError`] if an unexpected character or invalid escape sequence is
+    /// encountered.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`JsonError`] in the following scenarios;
+    ///
+    /// * **[`JsonError::UnexpectedToken`]**: Encountered an invalid starting character or an
+    /// unrecognized keyword (not `true`, `false`, or `null`).
+    /// * **[`JsonError::UnexpectedEndOfInput`]**: A string literal was opened with `"` but the
+    /// input ended before a closing `"` was found.
+    /// * **[`JsonError::InvalidNumber`]**: A sequence starting with a digit or `-` failed to parse
+    /// as a valid 64-bit float.
+    /// * **[`JsonError::InvalidEscape`]**: Encountered unsupported escape sequence (e.g., `\q`).
+    /// * **[`JsonError::InvalidUnicode`]**: A `\u` escape sequence contained fewer than 4 hex
+    /// digits or an invalid hex value.
+    /// 
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use rust_json_parser::{Tokenizer, Token};
+    /// let mut tokenizer = Tokenizer::new("true false null");
+    /// let tokens = tokenizer.tokenize().unwrap();
+    ///
+    /// assert_eq!(tokens[0], Token::Boolean(true));
+    /// assert_eq!(tokens[2], Token::Null);
+    /// ```
     pub fn tokenize(&mut self) -> Result<Vec<Token>> {
         let mut tokens = Vec::new();
 

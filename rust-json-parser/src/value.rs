@@ -153,7 +153,7 @@ impl JsonValue {
     /// //   ]
     /// // }
     /// assert!(output.contains("  \"name\": \"Tim Duncan\""));
-    /// assert!(output.contains("      \"Rust\""));
+    /// assert!(output.contains("    \"Rust\""));
     /// ```
     pub fn pretty_print(&self, indent: usize) -> String {
         self.pretty_print_recursive(0, indent)

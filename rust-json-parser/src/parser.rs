@@ -16,7 +16,7 @@ impl JsonParser {
     /// Creates a new `JsonParser` by tokenizing the provided input string.
     ///
     /// This method immediately initializes a [`Tokenizer`], converts the input string
-    /// into a vector of tokens, and prepares the parser for the first [`parse`] call.
+    /// into a vector of tokens, and prepares the parser for the first [`JsonParser::parse`] call.
     ///
     /// # Arguments
     ///
@@ -31,7 +31,7 @@ impl JsonParser {
     /// # Examples
     ///
     /// ```rust
-    /// # use rust_json_parser::JsonParser;
+    /// use rust_json_parser::JsonParser;
     /// let parser = JsonParser::new(r#"{"key": "value"}"#);
     /// assert!(parser.is_ok());
     ///
@@ -70,7 +70,7 @@ impl JsonParser {
     /// # Examples
     ///
     /// ```rust
-    /// use rust_json_parser::JsonParser;
+    /// use rust_json_parser::{JsonParser, JsonValue};
     /// let mut parser = JsonParser::new("[1, 2, 3]").unwrap();
     /// let value = parser.parse().unwrap();
     ///
