@@ -117,7 +117,7 @@ impl JsonParser {
         Ok(value)
     }
 
-    fn parse_object_sep(&mut self) -> Result<bool> {
+    fn parse_separator(&mut self) -> Result<bool> {
         match self.tokens.get(self.position) {
             Some(Token::Colon) => {
                 self.position += 1;
@@ -161,10 +161,10 @@ impl JsonParser {
                 }
             }
 
-            if self.parse_object_sep()?
-                && let Some(value) = self.parse_object_value()?
-            {
-                json_object.insert(key.clone(), value);
+            if self.parse_separator()? {
+                if let Some(value) = self.parse_object_value()? {
+                    json_object.insert(key.clone(), value);
+                }
             }
         }
 
