@@ -4,6 +4,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::collections::HashMap;
 use std::fs::read_to_string;
+use std::time::{Duration, Instant};
 
 impl<'py> IntoPyObject<'py> for JsonValue {
     type Target = PyAny;
@@ -182,6 +183,59 @@ fn dumps(obj: &Bound<PyAny>, indent: Option<usize>) -> PyResult<String> {
         Some(n) => Ok(json_value.pretty_print(n)),
         None => Ok(json_value.to_string()),
     }
+}
+
+fn analyze(times: &Vec<Duration>) -> &Duration {
+    let mut times_sorted: Vec<_> = times.iter().collect();
+    times_sorted.sort();
+    let times_median = times_sorted[times_sorted.len() / 2];
+    times_median
+}
+
+#[pyfunction]
+#[pyo3(signature = (json_str, iterations=1000))]
+fn benchmark_performance(
+    py: Python<'_>,
+    json_str: &str,
+    iterations: u32,
+) -> PyResult<(f64, f64, f64)> {
+    let mut rust_times = Vec::new();
+    let mut json_module_times = Vec::new();
+    let mut simplejson_times = Vec::new();
+
+    for _ in 0..iterations {
+        let rust_start = Instant::now();
+        let _ = parse_json(py, json_str);
+        rust_times.push(rust_start.elapsed());
+    }
+
+    let json_module = py.import("json")?;
+    let json_loads = json_module.getattr("loads")?;
+
+    for _ in 0..iterations {
+        let json_module_start = Instant::now();
+        let _ = json_loads.call1((json_str,))?;
+        json_module_times.push(json_module_start.elapsed());
+    }
+
+    let simplejson_module = py.import("simplejson")?;
+    let simplejson_loads = simplejson_module.getattr("loads")?;
+
+    for _ in 0..iterations {
+        let simplejson_start = Instant::now();
+        let _ = simplejson_loads.call1((json_str,))?;
+        simplejson_times.push(simplejson_start.elapsed());
+    }
+
+    let rust_median = analyze(&rust_times);
+    let json_module_median = analyze(&json_module_times);
+    let simplejson_median = analyze(&simplejson_times);
+
+    Ok((
+        rust_median.as_secs_f64(),
+        json_module_median.as_secs_f64(),
+        simplejson_median.as_secs_f64(),
+    ))
 }
 
 #[pymodule]
