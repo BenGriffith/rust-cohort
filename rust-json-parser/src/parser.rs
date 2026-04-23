@@ -211,7 +211,7 @@ impl JsonParser {
             if self.parse_object_sep()?
                 && let Some(value) = self.parse_object_value()?
             {
-                json_object.insert(key.clone(), value);
+                json_object.insert(key, value);
             }
         }
 
