@@ -115,7 +115,7 @@ impl JsonValue {
                 let mut print_string = String::from("{\n");
                 for (i, (key, value)) in obj.iter().enumerate() {
                     print_string.push_str(&next_indent);
-                    print_string.push_str(&format!("\"{}\": ", JsonValue::escape_string(key)));
+                    print_string.push_str(&format!("{}: ", JsonValue::escape_string(key)));
                     print_string.push_str(&value.pretty_print_recursive(depth + 1, indent));
                     if i < obj.len() - 1 {
                         print_string.push(',');
