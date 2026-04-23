@@ -188,11 +188,10 @@ impl JsonParser {
     fn is_unclosed(&self, token: &Token, exp: String) -> Result<bool> {
         match self.tokens.last() {
             Some(tok) if tok == token => Ok(true),
-            Some(_) => Err(JsonError::UnexpectedEndOfInput {
+            _ => Err(JsonError::UnexpectedEndOfInput {
                 expected: exp,
                 position: self.position,
             }),
-            None => Ok(false),
         }
     }
 
