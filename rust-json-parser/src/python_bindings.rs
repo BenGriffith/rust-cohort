@@ -49,7 +49,7 @@ impl From<JsonError> for PyErr {
             JsonError::UnexpectedEndOfInput { expected, position } => {
                 PyValueError::new_err(format!(
                     "Unexpected end of input at position {}: expected {}",
-                    expected, position
+                    position, expected
                 ))
             }
             JsonError::InvalidNumber { value, position } => PyValueError::new_err(format!(
@@ -185,23 +185,22 @@ fn dumps(obj: &Bound<PyAny>, indent: Option<usize>) -> PyResult<String> {
     }
 }
 
-fn analyze(times: &Vec<Duration>) -> &Duration {
+fn analyze(times: &Vec<Duration>) -> Duration {
     let mut times_sorted: Vec<_> = times.iter().collect();
     times_sorted.sort();
-    let times_median = times_sorted[times_sorted.len() / 2];
-    times_median
+    *times_sorted[times_sorted.len() / 2]
 }
 
 #[pyfunction]
-#[pyo3(signature = (json_str, iterations=1000))]
+#[pyo3(signature = (json_str, iterations=4000))]
 fn benchmark_performance(
     py: Python<'_>,
     json_str: &str,
     iterations: u32,
 ) -> PyResult<(f64, f64, f64)> {
-    let mut rust_times = Vec::new();
-    let mut json_module_times = Vec::new();
-    let mut simplejson_times = Vec::new();
+    let mut rust_times = Vec::with_capacity(iterations as usize);
+    let mut json_module_times = Vec::with_capacity(iterations as usize);
+    let mut simplejson_times = Vec::with_capacity(iterations as usize);
 
     for _ in 0..iterations {
         let rust_start = Instant::now();
