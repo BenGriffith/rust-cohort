@@ -61,7 +61,7 @@ fn main() -> Result<()> {
     // Serialize back to JSON
     println!("{}", value);
 
-    let value2: JsonValue = parse_json(json2).unwrap();
+    let value2: JsonValue = parse_json(json2)?;
     println!("{}", value2);
 
     Ok(())

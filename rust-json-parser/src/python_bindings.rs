@@ -48,7 +48,7 @@ impl From<JsonError> for PyErr {
             JsonError::UnexpectedEndOfInput { expected, position } => {
                 PyValueError::new_err(format!(
                     "Unexpected end of input at position {}: expected {}",
-                    expected, position
+                    position, expected
                 ))
             }
             JsonError::InvalidNumber { value, position } => PyValueError::new_err(format!(
