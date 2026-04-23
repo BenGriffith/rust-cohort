@@ -48,16 +48,11 @@ impl Tokenizer {
     ///
     /// This method will return a [`JsonError`] in the following scenarios;
     ///
-    /// * **[`JsonError::UnexpectedToken`]**: Encountered an invalid starting character or an
-    /// unrecognized keyword (not `true`, `false`, or `null`).
-    /// * **[`JsonError::UnexpectedEndOfInput`]**: A string literal was opened with `"` but the
-    /// input ended before a closing `"` was found.
-    /// * **[`JsonError::InvalidNumber`]**: A sequence starting with a digit or `-` failed to parse
-    /// as a valid 64-bit float.
+    /// * **[`JsonError::UnexpectedToken`]**: Encountered an invalid starting character or an unrecognized keyword (not `true`, `false`, or `null`).
+    /// * **[`JsonError::UnexpectedEndOfInput`]**: A string literal was opened with `"` but the input ended before a closing `"` was found.
+    /// * **[`JsonError::InvalidNumber`]**: A sequence starting with a digit or `-` failed to parse as a valid 64-bit float.
     /// * **[`JsonError::InvalidEscape`]**: Encountered unsupported escape sequence (e.g., `\q`).
-    /// * **[`JsonError::InvalidUnicode`]**: A `\u` escape sequence contained fewer than 4 hex
-    /// digits or an invalid hex value.
-    /// 
+    /// * **[`JsonError::InvalidUnicode`]**: A `\u` escape sequence contained fewer than 4 hex digits or an invalid hex value.
     ///
     /// # Example
     ///
