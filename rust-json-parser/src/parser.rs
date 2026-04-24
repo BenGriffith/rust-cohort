@@ -165,7 +165,7 @@ impl JsonParser {
         Ok(value)
     }
 
-    fn parse_object_sep(&mut self) -> Result<bool> {
+    fn parse_separator(&mut self) -> Result<bool> {
         match self.tokens.get(self.position) {
             Some(Token::Colon) => {
                 self.position += 1;
@@ -209,10 +209,10 @@ impl JsonParser {
                 }
             }
 
-            if self.parse_object_sep()?
-                && let Some(value) = self.parse_object_value()?
-            {
-                json_object.insert(key, value);
+            if self.parse_separator()? {
+                if let Some(value) = self.parse_object_value()? {
+                    json_object.insert(key.clone(), value);
+                }
             }
         }
 
@@ -236,11 +236,15 @@ impl JsonParser {
     fn is_unclosed(&self, token: &Token, exp: &str) -> Result<bool> {
         match self.tokens.last() {
             Some(tok) if tok == token => Ok(true),
+<<<<<<< HEAD
             Some(_) => Err(JsonError::UnexpectedEndOfInput {
                 expected: exp.to_string(),
+=======
+            _ => Err(JsonError::UnexpectedEndOfInput {
+                expected: exp,
+>>>>>>> main
                 position: self.position,
             }),
-            None => Ok(false),
         }
     }
 
