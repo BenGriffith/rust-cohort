@@ -41,6 +41,7 @@ impl JsonParser {
     pub fn new(input: &str) -> Result<Self> {
         let mut json_tokenizer = Tokenizer::new(input);
         let json_tokens = json_tokenizer.tokenize()?;
+        
         if json_tokens.is_empty() {
             return Err(JsonError::UnexpectedEndOfInput {
                 expected: "JSON value".to_string(),
@@ -113,7 +114,7 @@ impl JsonParser {
                     break;
                 }
                 Some(Token::Comma) => {
-                    self.trailing_comma(&Token::RightBracket, "RightBracket".to_string())?;
+                    self.trailing_comma(&Token::RightBracket, "RightBracket")?;
                     self.position += 1;
                     continue;
                 }
@@ -133,7 +134,7 @@ impl JsonParser {
         }
 
         if self.is_at_end() {
-            self.is_unclosed(&Token::RightBracket, "RightBracket".to_string())?;
+            self.is_unclosed(&Token::RightBracket, "RightBracket")?;
         }
         Ok(json_array)
     }
@@ -143,7 +144,7 @@ impl JsonParser {
         while !self.is_at_end() {
             match self.tokens.get(self.position) {
                 Some(Token::Comma) => {
-                    self.trailing_comma(&Token::RightBrace, "RightBrace".to_string())?;
+                    self.trailing_comma(&Token::RightBrace, "RightBrace")?;
                     self.position += 1;
                     continue;
                 }
@@ -191,7 +192,7 @@ impl JsonParser {
                     self.position += 1;
                 }
                 Some(Token::Comma) => {
-                    self.trailing_comma(&Token::RightBrace, "RightBrace".to_string())?;
+                    self.trailing_comma(&Token::RightBrace, "RightBrace")?;
                     self.position += 1;
                     continue;
                 }
@@ -216,27 +217,27 @@ impl JsonParser {
         }
 
         if self.is_at_end() {
-            self.is_unclosed(&Token::RightBrace, "RightBrace".to_string())?;
+            self.is_unclosed(&Token::RightBrace, "RightBrace")?;
         }
         Ok(json_object)
     }
 
-    fn trailing_comma(&self, token: &Token, exp: String) -> Result<bool> {
+    fn trailing_comma(&self, token: &Token, exp: &str) -> Result<bool> {
         match self.tokens.get(self.position + 1) {
             Some(tok) if tok != token => Ok(false),
             _ => Err(JsonError::UnexpectedToken {
-                expected: exp,
+                expected: exp.to_string(),
                 found: "Comma".to_string(),
                 position: self.position,
             }),
         }
     }
 
-    fn is_unclosed(&self, token: &Token, exp: String) -> Result<bool> {
+    fn is_unclosed(&self, token: &Token, exp: &str) -> Result<bool> {
         match self.tokens.last() {
             Some(tok) if tok == token => Ok(true),
             Some(_) => Err(JsonError::UnexpectedEndOfInput {
-                expected: exp,
+                expected: exp.to_string(),
                 position: self.position,
             }),
             None => Ok(false),
