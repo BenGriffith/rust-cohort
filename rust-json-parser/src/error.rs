@@ -29,6 +29,12 @@ pub enum JsonError {
     ExpectedColon {
         position: usize,
     },
+    IOError {
+        message: String,
+    },
+    FileNotFound {
+        path: String,
+    },
 }
 
 impl fmt::Display for JsonError {
@@ -69,7 +75,13 @@ impl fmt::Display for JsonError {
                 write!(f, "Invalid position: {position}")
             }
             JsonError::ExpectedColon { position } => {
-                write!(f, "Expected Token::Colon at position: {}", position)
+                write!(f, "Expected Colon at position: {}", position)
+            }
+            JsonError::IOError { message } => {
+                write!(f, "{}", message)
+            }
+            JsonError::FileNotFound { path } => {
+                write!(f, "File not found: {}", path)
             }
         }
     }

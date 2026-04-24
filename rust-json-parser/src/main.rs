@@ -63,5 +63,6 @@ fn main() -> Result<()> {
 
     let value2: JsonValue = parse_json(json2)?;
     println!("{}", value2);
+
     Ok(())
 }

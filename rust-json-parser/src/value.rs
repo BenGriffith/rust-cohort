@@ -83,6 +83,51 @@ impl JsonValue {
         escaped.push('"');
         escaped
     }
+
+    pub fn pretty_print(&self, indent: usize) -> String {
+        self.pretty_print_recursive(0, indent)
+    }
+
+    fn pretty_print_recursive(&self, depth: usize, indent: usize) -> String {
+        let current_indent = " ".repeat(depth * indent);
+        let next_indent = " ".repeat((depth + 1) * indent);
+
+        match self {
+            JsonValue::String(s) => JsonValue::escape_string(s),
+            JsonValue::Number(n) => n.to_string(),
+            JsonValue::Boolean(b) => b.to_string(),
+            JsonValue::Null => "null".to_string(),
+            JsonValue::Array(arr) => {
+                let mut print_string = String::from("[\n");
+                for (i, val) in arr.iter().enumerate() {
+                    print_string.push_str(&next_indent);
+                    print_string.push_str(&val.pretty_print_recursive(depth + 1, indent));
+                    if i < arr.len() - 1 {
+                        print_string.push(',');
+                    }
+                    print_string.push('\n');
+                }
+                print_string.push_str(&current_indent);
+                print_string.push(']');
+                print_string
+            }
+            JsonValue::Object(obj) => {
+                let mut print_string = String::from("{\n");
+                for (i, (key, value)) in obj.iter().enumerate() {
+                    print_string.push_str(&next_indent);
+                    print_string.push_str(&format!("{}: ", JsonValue::escape_string(key)));
+                    print_string.push_str(&value.pretty_print_recursive(depth + 1, indent));
+                    if i < obj.len() - 1 {
+                        print_string.push(',');
+                    }
+                    print_string.push('\n');
+                }
+                print_string.push_str(&current_indent);
+                print_string.push('}');
+                print_string
+            }
+        }
+    }
 }
 
 impl fmt::Display for JsonValue {

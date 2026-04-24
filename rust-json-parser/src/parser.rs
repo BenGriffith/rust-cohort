@@ -505,10 +505,10 @@ mod tests {
         fn test_object_get() {
             let value = parse_json(r#"{"name": "Alice", "age": 30}"#).unwrap();
             assert_eq!(
-                value.get(&"name"),
+                value.get("name"),
                 Some(&JsonValue::String("Alice".to_string()))
             );
-            assert_eq!(value.get(&"missing"), None);
+            assert_eq!(value.get("missing"), None);
         }
     }
 
