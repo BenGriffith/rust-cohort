@@ -4,6 +4,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::collections::HashMap;
 use std::fs::read_to_string;
+use std::time::{Duration, Instant};
 
 impl<'py> IntoPyObject<'py> for JsonValue {
     type Target = PyAny;
@@ -77,6 +78,26 @@ impl From<JsonError> for PyErr {
     }
 }
 
+/// Parses a JSON string into a native Python object.
+///
+/// This function executes the Rust-based recursive descent parser to transform a raw string
+/// into an equivalent Python structure (dict, list, float, etc.).
+///
+/// Args:
+///     input (str): The raw JSON string to be parsed.
+///
+/// Returns:
+///     Any: A Python object representation of the JSON data.
+///
+/// Raises:
+///     ValueError: If the input string contains invalid JSON syntax or
+///                 unsupported escape sequences.
+///
+/// Example:
+///     >>> import _rust_json_parser
+///     >>> data = _rust_json_parser.parse_json('{"status": "ok", "count": 5}')
+///     >>> print(data["status"])
+///     ok
 #[pyfunction]
 fn parse_json<'py>(py: Python<'py>, input: &str) -> PyResult<Bound<'py, PyAny>> {
     let mut parser = JsonParser::new(input)?;
@@ -85,6 +106,26 @@ fn parse_json<'py>(py: Python<'py>, input: &str) -> PyResult<Bound<'py, PyAny>> 
     Ok(py_result)
 }
 
+/// Reads a file from the filesystem and parses its JSON content.
+///
+/// This is a convenience function that handles file I/O in Rust before passing
+/// the content to the parser.
+///
+/// Args:
+///     path (str): The absolute or relative path to the .json file.
+///
+/// Returns:
+///     Any: A Python object representation of the file's content.
+///
+/// Raises:
+///     IOError: If the file does not exist or cannot be read.
+///     ValueError: If the file content is not valid JSON.
+///
+/// Example:
+///     >>> import _rust_json_parser
+///     >>> data = _rust_json_parser.parse_json_file("config.json")
+///     >>> print(type(data))
+///     <class 'dict'>
 #[pyfunction]
 fn parse_json_file<'py>(py: Python<'py>, path: &str) -> PyResult<Bound<'py, PyAny>> {
     let input = read_to_string(path)?;
@@ -144,10 +185,63 @@ fn dumps(obj: &Bound<PyAny>, indent: Option<usize>) -> PyResult<String> {
     }
 }
 
+fn analyze(times: &Vec<Duration>) -> Duration {
+    let mut times_sorted: Vec<_> = times.iter().collect();
+    times_sorted.sort();
+    *times_sorted[times_sorted.len() / 2]
+}
+
+#[pyfunction]
+#[pyo3(signature = (json_str, iterations=4000))]
+fn benchmark_performance(
+    py: Python<'_>,
+    json_str: &str,
+    iterations: u32,
+) -> PyResult<(f64, f64, f64)> {
+    let mut rust_times = Vec::with_capacity(iterations as usize);
+    let mut json_module_times = Vec::with_capacity(iterations as usize);
+    let mut simplejson_times = Vec::with_capacity(iterations as usize);
+
+    for _ in 0..iterations {
+        let rust_start = Instant::now();
+        let _ = parse_json(py, json_str);
+        rust_times.push(rust_start.elapsed());
+    }
+
+    let json_module = py.import("json")?;
+    let json_loads = json_module.getattr("loads")?;
+
+    for _ in 0..iterations {
+        let json_module_start = Instant::now();
+        let _ = json_loads.call1((json_str,))?;
+        json_module_times.push(json_module_start.elapsed());
+    }
+
+    let simplejson_module = py.import("simplejson")?;
+    let simplejson_loads = simplejson_module.getattr("loads")?;
+
+    for _ in 0..iterations {
+        let simplejson_start = Instant::now();
+        let _ = simplejson_loads.call1((json_str,))?;
+        simplejson_times.push(simplejson_start.elapsed());
+    }
+
+    let rust_median = analyze(&rust_times);
+    let json_module_median = analyze(&json_module_times);
+    let simplejson_median = analyze(&simplejson_times);
+
+    Ok((
+        rust_median.as_secs_f64(),
+        json_module_median.as_secs_f64(),
+        simplejson_median.as_secs_f64(),
+    ))
+}
+
 #[pymodule]
 fn _rust_json_parser(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_json, m)?)?;
     m.add_function(wrap_pyfunction!(parse_json_file, m)?)?;
     m.add_function(wrap_pyfunction!(dumps, m)?)?;
+    m.add_function(wrap_pyfunction!(benchmark_performance, m)?)?;
     Ok(())
 }

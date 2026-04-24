@@ -86,6 +86,9 @@ python3 -m rust_json_parser '{"hello":"world"}'
 
 # Parse from stdin (pipe)
 echo '{"test": 123}' | python3 -m rust_json_parser
+
+# Benchmarking
+python3 -m rust_json_parser --benchmark
 ```
 
 ---
