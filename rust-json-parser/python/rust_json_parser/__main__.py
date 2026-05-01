@@ -20,7 +20,7 @@ def generate_test_json(size_bytes: int) -> str:
     """
     data = {
         "metadata": {
-            "source": "".join(random.choices(string.ascii_letters, k=10)),
+            "source": "".join(random.choices(string.ascii_letters, k=5)),
             "seed": random.randint(0, 1000000),
             "tags": random.sample(
                 ["bench", "test", "rust", "python", "simd", "json"], k=3
@@ -34,12 +34,14 @@ def generate_test_json(size_bytes: int) -> str:
     while current_size < size_bytes:
         # Create a randomized record
         record = {
-            "".join(random.choices(string.ascii_lowercase, k=8)): {
+            "".join(random.choices(string.ascii_lowercase, k=5)): {
                 "id": random.randint(1000, 9999),
                 "active": random.choice([True, False, None]),
-                "score": random.uniform(0, 100),
+                "score": random.randint(0, 100),
                 "payload": "X" * random.randint(50, 200),
-                "data_points": [random.random() for _ in range(random.randint(1, 5))],
+                "data_points": [
+                    random.randint(1, 1000) for _ in range(random.randint(1, 5))
+                ],
             }
         }
         data["records"].append(record)
@@ -85,13 +87,17 @@ def run_benchmark(size: str):
 
     json_speedup_word = "faster" if json_speedup >= 1 else "slower"
     simplejson_speedup_word = "faster" if simplejson_speedup >= 1 else "slower"
+    rust_json_display = json_speedup if json_speedup >= 1 else 1 / json_speedup
+    rust_simplejson_display = (
+        simplejson_speedup if simplejson_speedup >= 1 else 1 / simplejson_speedup
+    )
 
     print(f"Rust:             {rust_time:.6f}s")
     print(
-        f"Python json (C):  {python_json_time:.6f}s  (Rust is {json_speedup:.2f}x {json_speedup_word})"
+        f"Python json (C):  {python_json_time:.6f}s  (Rust is {rust_json_display:.2f}x {json_speedup_word})"
     )
     print(
-        f"simplejson:       {simplejson_time:.6f}s  (Rust is {simplejson_speedup:.2f}x {simplejson_speedup_word})\n"
+        f"simplejson:       {simplejson_time:.6f}s  (Rust is {rust_simplejson_display:.2f}x {simplejson_speedup_word})\n"
     )
 
 
