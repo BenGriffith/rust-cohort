@@ -1,21 +1,39 @@
 use std::collections::HashMap;
 use std::fmt;
 
+/// This enum is the core AST (Abstract Syntax Tree) for the parser, providing a
+/// type-safe way to represent and manipulate JSON data structures into Rust.
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonValue {
+    /// Represents a JSON `null` literal.
     Null,
+    /// Represents a JSON boolean: `true` or `false`.
     Boolean(bool),
+    /// Represents a JSON number. Internally stored as `f64`.
     Number(f64),
+    /// Represents a JSON string.
     String(String),
+    /// Represents a JSON array (an ordered list of values).
     Array(Vec<JsonValue>),
+    /// Represents a JSON object (a collection of key/value pairs).
     Object(HashMap<String, JsonValue>),
 }
 
 impl JsonValue {
+    /// Returns `true` if the value is [`JsonValue::Null`].
     pub fn is_null(&self) -> bool {
         matches!(self, JsonValue::Null)
     }
 
+    /// If the value is a [`JsonValue::String`], returns the associated string slice.
+    /// Returns `None` otherwise.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use rust_json_parser::JsonValue;
+    /// let val = JsonValue::String("rust".to_string());
+    /// assert_eq!(val.as_str(), Some("rust"));
+    /// ```
     pub fn as_str(&self) -> Option<&str> {
         match self {
             JsonValue::String(s) => Some(s.as_str()),
@@ -23,6 +41,8 @@ impl JsonValue {
         }
     }
 
+    /// If the value is a [`JsonValue::Number`], returns the associated `f64`.
+    /// Returns `None` otherwise.
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             JsonValue::Number(n) => Some(*n),
@@ -30,6 +50,8 @@ impl JsonValue {
         }
     }
 
+    /// If the value is a [`JsonValue::Boolean`], returns the associated `bool`.
+    /// Returns `None` otherwise.
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             JsonValue::Boolean(b) => Some(*b),
@@ -37,7 +59,8 @@ impl JsonValue {
         }
     }
 
-    // returns the inner vec if this is an array
+    /// If the value is a [`JsonValue::Array`], returns a reference to the inner [`Vec`].
+    /// Returns `None` otherwise.
     pub fn as_array(&self) -> Option<&Vec<JsonValue>> {
         match self {
             JsonValue::Array(a) => Some(a),
@@ -45,6 +68,7 @@ impl JsonValue {
         }
     }
 
+    /// If the value is a [`JsonValue::Object`], returns a reference to the inner [`HashMap`].
     pub fn as_object(&self) -> Option<&HashMap<String, JsonValue>> {
         match self {
             JsonValue::Object(o) => Some(o),
@@ -52,6 +76,19 @@ impl JsonValue {
         }
     }
 
+    /// Retrieves a value from a [`JsonValue::Object`] by key.
+    /// Returns `None` if the value is not an object or the key is missing.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use rust_json_parser::JsonValue;
+    /// # use std::collections::HashMap;
+    /// let mut map = HashMap::new();
+    /// map.insert("id".to_string(), JsonValue::Number(1.0));
+    /// let obj = JsonValue::Object(map);
+    ///
+    /// assert_eq!(obj.get("id"), Some(&JsonValue::Number(1.0)));
+    /// ```
     pub fn get(&self, key: &str) -> Option<&JsonValue> {
         match self {
             JsonValue::Object(o) => o.get(key),
@@ -59,6 +96,8 @@ impl JsonValue {
         }
     }
 
+    /// Retrieves a value from [`JsonValue::Array`] by index.
+    /// Returns `None` if the value is not an array or the index is out of bounds.
     pub fn get_index(&self, index: usize) -> Option<&JsonValue> {
         match self {
             JsonValue::Array(a) => a.get(index),
@@ -66,6 +105,8 @@ impl JsonValue {
         }
     }
 
+    /// Escapes special characters in a string according to JSON standards and
+    /// wraps it in double quotes.
     pub fn escape_string(s: &str) -> String {
         let mut escaped = String::from("\"");
         for c in s.chars() {
@@ -84,6 +125,36 @@ impl JsonValue {
         escaped
     }
 
+    /// Returns a string representation of the JSON value with consistent indentation.
+    ///
+    /// This method recursively formats objects and arrays, placing each element on a
+    /// new line with the specified number of spaces per indentation level.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use rust_json_parser::JsonValue;
+    /// # use std::collections::HashMap;
+    /// let mut map = HashMap::new();
+    /// map.insert("name".to_string(), JsonValue::String("Tim Duncan".to_string()));
+    /// map.insert("skills".to_string(), JsonValue::Array(vec![
+    ///     JsonValue::String("Python".to_string()),
+    ///     JsonValue::String("Rust".to_string()),
+    /// ]));
+    ///
+    /// let obj = JsonValue::Object(map);
+    /// let output = obj.pretty_print(2);
+    ///
+    /// // The output will look like:
+    /// // {
+    /// //   "name": "Tim Duncan",
+    /// //   "skills": [
+    /// //     "Python",
+    /// //     "Rust"
+    /// //   ]
+    /// // }
+    /// assert!(output.contains("  \"name\": \"Tim Duncan\""));
+    /// assert!(output.contains("    \"Rust\""));
+    /// ```
     pub fn pretty_print(&self, indent: usize) -> String {
         self.pretty_print_recursive(0, indent)
     }

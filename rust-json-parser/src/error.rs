@@ -1,40 +1,45 @@
 use std::fmt;
 
+/// Errors that can occur during the lexical analysis or parsing of JSON data.
+///
+/// This enum categorizes all possible failure points, from malformed strings to
+/// underlying I/O issues. Each variant provides the `position` in the input
+/// string to facilitate debugging.
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonError {
+    /// Occurs when a token is found that does not match the expected JSON grammar.
+    ///
+    /// **Example:** Finding a comma where a colon was expected in an object.
     UnexpectedToken {
+        /// A description of the expected token.
         expected: String,
+        /// The actual token string found in the input.
         found: String,
+        /// Byte offset where the error occurred.
         position: usize,
     },
-    UnexpectedEndOfInput {
-        expected: String,
-        position: usize,
-    },
-    InvalidNumber {
-        value: String,
-        position: usize,
-    },
-    InvalidEscape {
-        char: char,
-        position: usize,
-    },
-    InvalidUnicode {
-        sequence: String,
-        position: usize,
-    },
-    InvalidPosition {
-        position: usize,
-    },
-    ExpectedColon {
-        position: usize,
-    },
-    IOError {
-        message: String,
-    },
-    FileNotFound {
-        path: String,
-    },
+    /// Occurs when the input stream ends prematurely.
+    ///
+    /// **Example:** An unclosed array `[1, 2`.
+    UnexpectedEndOfInput { expected: String, position: usize },
+    /// Occurs when a numeric literal is invalid.
+    ///
+    /// **Example:** `0123` (no leading zeros) or `1.2.3`.
+    InvalidNumber { value: String, position: usize },
+    /// Occurs when an invalid escape sequence is encountered within a string.
+    ///
+    /// Valid escapes are `"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, and `\t`.
+    InvalidEscape { char: char, position: usize },
+    /// Occurs when a `\uXXXX` escape sequence contains non-hexadecimal characters.
+    InvalidUnicode { sequence: String, position: usize },
+    /// A generic error for when a parser action is attempted at an out-of-bounds position.
+    InvalidPosition { position: usize },
+    /// A specific error for missing colons between keys and values in objects.
+    ExpectedColon { position: usize },
+    /// A wrapper for general Input/Output failures.
+    IOError { message: String },
+    /// Occurs when a specified JSON file cannot be located on the filesystem.
+    FileNotFound { path: String },
 }
 
 impl fmt::Display for JsonError {
