@@ -2,7 +2,7 @@
 //!
 //! A lightweight, hand-rolled JSON parser and tokenizer implemented in Rust.
 //! This crate provides a full pipeline for transforming raw JSON strings into a
-//! structured 'JsonValue' Abstract Syntax Tree (AST).
+//! structured [`JsonValue`] Abstract Syntax Tree (AST).
 //!
 //! ## Core Components
 //!
@@ -40,7 +40,7 @@ pub use value::JsonValue;
 pub type Result<T> = std::result::Result<T, JsonError>;
 
 #[cfg(feature = "python")]
-mod python_bindings;
+pub mod python_bindings;
 
 #[cfg(test)]
 mod tests {

@@ -83,23 +83,19 @@ impl From<JsonError> for PyErr {
 /// This function executes the Rust-based recursive descent parser to transform a raw string
 /// into an equivalent Python structure (dict, list, float, etc.).
 ///
-/// Args:
-///     input (str): The raw JSON string to be parsed.
+/// # Errors
+/// * **ValueError**: If the input string contains invalid JSON syntax or unsupported escape sequences.
 ///
-/// Returns:
-///     Any: A Python object representation of the JSON data.
+/// # Example
 ///
-/// Raises:
-///     ValueError: If the input string contains invalid JSON syntax or
-///                 unsupported escape sequences.
-///
-/// Example:
-///     >>> import _rust_json_parser
-///     >>> data = _rust_json_parser.parse_json('{"status": "ok", "count": 5}')
-///     >>> print(data["status"])
-///     ok
+/// ```python
+/// >>> import _rust_json_parser
+/// >>> data = _rust_json_parser.parse_json('{"status": "ok", "count": 5}')
+/// >>> print(data["status"])
+/// ok
+/// ```
 #[pyfunction]
-fn parse_json<'py>(py: Python<'py>, input: &str) -> PyResult<Bound<'py, PyAny>> {
+pub fn parse_json<'py>(py: Python<'py>, input: &str) -> PyResult<Bound<'py, PyAny>> {
     let mut parser = JsonParser::new(input)?;
     let result = parser.parse()?;
     let py_result = result.into_pyobject(py)?;
@@ -111,23 +107,20 @@ fn parse_json<'py>(py: Python<'py>, input: &str) -> PyResult<Bound<'py, PyAny>> 
 /// This is a convenience function that handles file I/O in Rust before passing
 /// the content to the parser.
 ///
-/// Args:
-///     path (str): The absolute or relative path to the .json file.
+/// # Errors
+/// * **IOError**: If the file does not exist or cannot be read.
+/// * **ValueError**: If the file content is not valid JSON.
 ///
-/// Returns:
-///     Any: A Python object representation of the file's content.
+/// # Example
 ///
-/// Raises:
-///     IOError: If the file does not exist or cannot be read.
-///     ValueError: If the file content is not valid JSON.
-///
-/// Example:
-///     >>> import _rust_json_parser
-///     >>> data = _rust_json_parser.parse_json_file("config.json")
-///     >>> print(type(data))
-///     <class 'dict'>
+/// ```python
+/// >>> import _rust_json_parser
+/// >>> data = _rust_json_parser.parse_json_file("config.json")
+/// >>> print(type(data))
+/// <class 'dict'>
+/// ```
 #[pyfunction]
-fn parse_json_file<'py>(py: Python<'py>, path: &str) -> PyResult<Bound<'py, PyAny>> {
+pub fn parse_json_file<'py>(py: Python<'py>, path: &str) -> PyResult<Bound<'py, PyAny>> {
     let input = read_to_string(path)?;
     let mut parser = JsonParser::new(&input)?;
     let result = parser.parse()?;
@@ -185,7 +178,7 @@ fn dumps(obj: &Bound<PyAny>, indent: Option<usize>) -> PyResult<String> {
     }
 }
 
-fn analyze(times: &Vec<Duration>) -> Duration {
+fn analyze(times: &[Duration]) -> Duration {
     let mut times_sorted: Vec<_> = times.iter().collect();
     times_sorted.sort();
     *times_sorted[times_sorted.len() / 2]
@@ -196,15 +189,15 @@ fn analyze(times: &Vec<Duration>) -> Duration {
 fn benchmark_performance(
     py: Python<'_>,
     json_str: &str,
-    iterations: u32,
+    iterations: usize,
 ) -> PyResult<(f64, f64, f64)> {
-    let mut rust_times = Vec::with_capacity(iterations as usize);
-    let mut json_module_times = Vec::with_capacity(iterations as usize);
-    let mut simplejson_times = Vec::with_capacity(iterations as usize);
+    let mut rust_times = Vec::with_capacity(iterations);
+    let mut json_module_times = Vec::with_capacity(iterations);
+    let mut simplejson_times = Vec::with_capacity(iterations);
 
     for _ in 0..iterations {
         let rust_start = Instant::now();
-        let _ = parse_json(py, json_str);
+        let _ = parse_json(py, json_str)?;
         rust_times.push(rust_start.elapsed());
     }
 

@@ -41,7 +41,7 @@ impl JsonParser {
     pub fn new(input: &str) -> Result<Self> {
         let mut json_tokenizer = Tokenizer::new(input);
         let json_tokens = json_tokenizer.tokenize()?;
-        
+
         if json_tokens.is_empty() {
             return Err(JsonError::UnexpectedEndOfInput {
                 expected: "JSON value".to_string(),
@@ -236,13 +236,8 @@ impl JsonParser {
     fn is_unclosed(&self, token: &Token, exp: &str) -> Result<bool> {
         match self.tokens.last() {
             Some(tok) if tok == token => Ok(true),
-<<<<<<< HEAD
-            Some(_) => Err(JsonError::UnexpectedEndOfInput {
-                expected: exp.to_string(),
-=======
             _ => Err(JsonError::UnexpectedEndOfInput {
-                expected: exp,
->>>>>>> main
+                expected: exp.to_string(),
                 position: self.position,
             }),
         }

@@ -38,7 +38,7 @@ impl Tokenizer {
         }
     }
 
-    /// Processes the entire input strin and returns a vector of [`Token`]s.
+    /// Processes the entire input string and returns a vector of [`Token`]s.
     ///
     /// This method will skip whitespace and identify JSON symbols and literals.
     /// It returns a [`JsonError`] if an unexpected character or invalid escape sequence is
@@ -240,6 +240,7 @@ impl Tokenizer {
                 }
             }
         }
+
         match string_value.as_str() {
             "null" => Ok(Token::Null),
             "true" => Ok(Token::Boolean(true)),
